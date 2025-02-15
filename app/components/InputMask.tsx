@@ -1,35 +1,52 @@
 "use client";
 
 import React from "react";
-import InputMask from "react-input-mask";
 
 interface MaskedInputProps {
-  type: "cpf" | "telefone";
+  type: "CPF" | "Telefone";
   value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange: (value: string) => void;
   placeholder?: string;
 }
 
-const MaskedInput: React.FC<MaskedInputProps> = ({ type, value, onChange, placeholder }) => {
-  const masks = {
-    cpf: "999.999.999-99",
-    telefone: "(99) 99999-9999",
+const applyMask = (value: string, type: "CPF" | "Telefone") => {
+  value = value.replace(/\D/g, ""); // Remove tudo que não for dígito
+
+  if (type === "CPF") {
+    return value
+      .replace(/^(\d{3})(\d)/, "$1.$2")
+      .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+      .replace(/\.(\d{3})(\d)/, ".$1-$2")
+      .slice(0, 14); // Limita o tamanho do CPF
+  } else if (type === "Telefone") {
+    return value
+      .replace(/^(\d{2})(\d)/, "($1) $2")
+      .replace(/(\d{5})(\d)/, "$1-$2")
+      .slice(0, 15); // Limita o tamanho do telefone
+  }
+
+  return value;
+};
+
+const MaskedInput: React.FC<MaskedInputProps & { className?: string }> = ({ 
+  type, 
+  value, 
+  onChange, 
+  placeholder, 
+  className = "" 
+}) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onChange(applyMask(e.target.value, type));
   };
 
   return (
-    <InputMask
-      mask={masks[type]}
+    <input
+      type="text"
       value={value}
-      onChange={onChange}
-    >
-      {(inputProps) => (
-        <input
-          {...inputProps}
-          className="border px-4 py-2 rounded w-full"
-          placeholder={placeholder || (type === "cpf" ? "CPF" : "Telefone")}
-        />
-      )}
-    </InputMask>
+      onChange={handleChange}
+      className={`appearance-none bg-transparent focus:outline-none ${className}`}
+      placeholder={placeholder || (type === "CPF" ? "Digite seu CPF" : "Digite seu telefone")}
+    />
   );
 };
 

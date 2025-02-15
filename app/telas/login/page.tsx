@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { login, register } from "@/app/services/authService";
-// import MaskedInput from "@/app/components/InputMask";
+import MaskedInput from "@/app/components/InputMask"; 
 
 interface InputProps {
   type: string;
@@ -29,13 +29,10 @@ const Input: React.FC<InputProps> = ({
   );
 };
 
-// Componente Button
-interface ButtonProps {
+const Button: React.FC<{
   children: React.ReactNode;
   type?: "button" | "submit" | "reset";
-}
-
-const Button: React.FC<ButtonProps> = ({ children, type = "button" }) => {
+}> = ({ children, type = "button" }) => {
   return (
     <button
       type={type}
@@ -46,73 +43,70 @@ const Button: React.FC<ButtonProps> = ({ children, type = "button" }) => {
   );
 };
 
-// Componente principal de Login e Cadastro
 const LoginCadastro = () => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"login" | "cadastro">("login");
-  const [email, setEmail] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
-  const [nome, setNome] = useState<string>("");
-  const [cpf, setCpf] = useState<string>("");
-  const [telefone, setTelefone] = useState<string>("");
-  const [senha, setSenha] = useState<string>("");
-  const [confirmarSenha, setConfirmarSenha] = useState<string>("");
-  const [error, setError] = useState<string>("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [nome, setNome] = useState("");
+  const [cpf, setCpf] = useState("");
+  const [telefone, setTelefone] = useState("");
+  const [senha, setSenha] = useState("");
+  const [confirmarSenha, setConfirmarSenha] = useState("");
+  const [error, setError] = useState("");
 
-  // Função para login
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
     try {
-        const loginData = { login: email, senha: password };
-        const response = await login(loginData);
+      const response = await login({ login: email, senha: password });
 
-        if (response.token) {
-            localStorage.setItem("token", response.token);
-            localStorage.setItem("tipoDeUsuario", response.tipoDeUsuario);
+      if (response.token) {
+        localStorage.setItem("token", response.token);
+        localStorage.setItem("tipoDeUsuario", response.tipoDeUsuario);
+        localStorage.setItem("nome", response.nome);
 
-            if (response.nome) {
-                localStorage.setItem("user", JSON.stringify({ nome: response.nome }));
-            }
+        // if (response.nome) {
+        //   localStorage.setItem("user", JSON.stringify({ nome: response.nome }));
+        // }
 
-            alert("Login realizado com sucesso!");
+        alert("Login realizado com sucesso!");
 
-            // Redirecionamento baseado no tipo de usuário
-            switch (response.tipoDeUsuario) {
-                case "ADMINISTRADOR":
-                    router.push("/telas/administradores");
-                    break;
-                case "FUNCIONARIO":
-                    router.push("/telas/funcionarios");
-                    break;
-                case "CLIENTE":
-                    router.push("/telas/clientes");
-                    break;
-                default:
-                    router.push("/");
-            }
-        } else {
-            setError("Erro ao fazer login. Verifique suas credenciais.");
+        switch (response.tipoDeUsuario) {
+          case "ADMINISTRADOR":
+            router.push("/telas/administradores");
+            break;
+          case "FUNCIONARIO":
+            router.push("/telas/funcionarios");
+            break;
+          case "CLIENTE":
+            router.push("/telas/clientes");
+            break;
+          default:
+            router.push("/");
         }
+      } else {
+        setError("Erro ao fazer login. Verifique suas credenciais.");
+      }
     } catch (err) {
-        setError(err instanceof Error ? err.message : "Erro desconhecido ao fazer login.");
+      setError(
+        err instanceof Error ? err.message : "Erro desconhecido ao fazer login."
+      );
     }
-};
+  };
 
-
-  // Função para cadastro
   const handleCadastro = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(""); // Limpa os erros
-  
+    setError("");
+
     if (senha !== confirmarSenha) {
-      setError("As senhas não conferem!");
+      setError("As senhas não são iguais!");
       return;
     }
-  
+
     try {
-      const response = await register({
+      await register({
         email,
         nome,
         cpf,
@@ -120,17 +114,17 @@ const LoginCadastro = () => {
         senha,
         tipoDeUsuario: "CLIENTE",
       });
-      console.log("Cadastro realizado com sucesso:", response);
       alert("Cadastro realizado com sucesso!");
     } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Erro desconhecido ao realizar cadastro.");
-      }
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Erro desconhecido ao realizar cadastro."
+      );
+      alert("Erro desconhecido ao realizar cadastro.");
     }
   };
-  
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-100 to-blue-300">
       <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md">
@@ -190,18 +184,19 @@ const LoginCadastro = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
-            <Input
-              type="text"
-              placeholder="CPF"
+            <MaskedInput
+              type="CPF"
               value={cpf}
-              onChange={(e) => setCpf(e.target.value)}
+              onChange={setCpf}
+              className="w-full border border-gray-300 px-3 py-2 rounded-md text-black placeholder-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-200"
             />
-            <Input
-              type="tel"
-              placeholder="Telefone"
+            <MaskedInput
+              type="Telefone"
               value={telefone}
-              onChange={(e) => setTelefone(e.target.value)}
+              onChange={setTelefone}
+              className="w-full border border-gray-300 px-3 py-2 rounded-md text-black placeholder-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-200"
             />
+
             <Input
               type="password"
               placeholder="Digite sua senha"
@@ -218,8 +213,6 @@ const LoginCadastro = () => {
             <Button type="submit">Cadastrar</Button>
           </form>
         )}
-
-        
       </div>
     </div>
   );

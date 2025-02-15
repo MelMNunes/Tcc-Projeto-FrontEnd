@@ -1,11 +1,19 @@
 "use client";
 
 import React, { useState } from "react";
+import MaskedInput from "@/app/components/InputMask";
 
 interface UserModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (user: { nome: string; email: string; cpf: string; telefone: string; senha: string; tipoDeUsuario: string }) => void;
+  onSave: (user: {
+    nome: string;
+    email: string;
+    cpf: string;
+    telefone: string;
+    senha: string;
+    tipoDeUsuario: string;
+  }) => void;
 }
 
 const UserModal = ({ isOpen, onClose, onSave }: UserModalProps) => {
@@ -20,7 +28,9 @@ const UserModal = ({ isOpen, onClose, onSave }: UserModalProps) => {
 
   if (!isOpen) return null;
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     setUserData((prev) => ({ ...prev, [name]: value }));
   };
@@ -60,25 +70,23 @@ const UserModal = ({ isOpen, onClose, onSave }: UserModalProps) => {
             />
           </label>
           <label className="block mb-2">
-            CPF:
-            <input
-              type="text"
-              name="cpf"
+          CPF:
+            <MaskedInput
+              type="CPF"
               value={userData.cpf}
-              onChange={handleChange}
+              onChange={(value) => setUserData({ ...userData, cpf: value })}
               className="w-full border p-2 rounded mt-1"
-              required
             />
           </label>
           <label className="block mb-2">
-            Telefone:
-            <input
-              type="text"
-              name="telefone"
+          Telefone:
+            <MaskedInput
+              type="Telefone"
               value={userData.telefone}
-              onChange={handleChange}
+              onChange={(value) =>
+                setUserData({ ...userData, telefone: value })
+              }
               className="w-full border p-2 rounded mt-1"
-              required
             />
           </label>
           <label className="block mb-2">

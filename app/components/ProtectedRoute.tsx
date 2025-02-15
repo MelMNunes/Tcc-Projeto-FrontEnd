@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode; allowedRoles: string[] }) => {
   const router = useRouter();
-  const tipoDeUsuario = localStorage.getItem("tipoDeUsuario");
+  const tipoDeUsuario = localStorage.getItem("tipodeusuario");
 
   useEffect(() => {
     if (!tipoDeUsuario || !allowedRoles.includes(tipoDeUsuario)) {

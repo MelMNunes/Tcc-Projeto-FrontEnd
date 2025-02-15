@@ -8,8 +8,6 @@ import UserModal from "@/app/telas/administradores/UserModal";
 // import MaskedInput from "@/app/components/InputMask";
 
 
-
-
 interface Usuario {
   id: number;
   nome: string;

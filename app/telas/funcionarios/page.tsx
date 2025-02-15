@@ -1,20 +1,24 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import LandingFooter from "@/app/landing/LandingFooter";
+import React, { 
+  // useEffect, 
+  useState } from "react";
+// import LandingFooter from "@/app/landing/LandingFooter";
+import AgendamentoPage from "../agendamento/page";
+
 
 const FuncionariosPage = () => {
-  const [selectedTab, setSelectedTab] = useState("consultas");
-  const [isScrolledToBottom, setIsScrolledToBottom] = useState(false);
+  const [selectedTab, setSelectedTab] = useState("agendamento");
+  // const [isScrolledToBottom, setIsScrolledToBottom] = useState(false);
 
-    useEffect(() => {
-      const handleScroll = () => {
-        const isBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight;
-        setIsScrolledToBottom(isBottom);
-      };
-      window.addEventListener("scroll", handleScroll);
-      return () => window.removeEventListener("scroll", handleScroll);
-    }, []);
+    // useEffect(() => {
+    //   const handleScroll = () => {
+    //     const isBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight;
+    //     setIsScrolledToBottom(isBottom);
+    //   };
+    //   window.addEventListener("scroll", handleScroll);
+    //   return () => window.removeEventListener("scroll", handleScroll);
+    // }, []);
   
 
   return (
@@ -39,6 +43,12 @@ const FuncionariosPage = () => {
         {/* Menu Lateral Fixo */}
         <nav className="w-1/4 bg-white p-4 shadow-md h-screen fixed left-0 top-16">
           <ul className="space-y-2">
+          <li
+              className={`p-2 rounded cursor-pointer ${selectedTab === "agendamento" ? "bg-blue-500 text-white" : "hover:bg-gray-200"}`}
+              onClick={() => setSelectedTab("agendamento")}
+            >
+              Agendamento
+            </li>
             <li
               className={`p-2 rounded cursor-pointer ${selectedTab === "consultas" ? "bg-blue-500 text-white" : "hover:bg-gray-200"}`}
               onClick={() => setSelectedTab("consultas")}
@@ -62,6 +72,12 @@ const FuncionariosPage = () => {
 
         {/* Área de Conteúdo */}
         <main className="w-3/4 bg-white p-6 rounded-lg shadow-md ml-auto mt-16">
+        {selectedTab === "agendamento" && (
+            <div>
+              <h2 className="text-xl font-semibold mb-2">Agendamento</h2>
+              <AgendamentoPage />
+            </div>
+          )}
           {selectedTab === "consultas" && (
             <div>
               <h2 className="text-xl font-semibold mb-2">Consultas</h2>
@@ -84,9 +100,9 @@ const FuncionariosPage = () => {
       </div>
 
       {/* Footer */}
-      <div className="w-full">
+      {/* <div className="w-full">
       {isScrolledToBottom && <LandingFooter />}
-      </div>
+      </div> */}
     </div>
   );
 };
