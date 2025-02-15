@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // page.tsx
 "use client";
 
@@ -22,3 +23,14 @@ const Page = () => {
 };
 
 export default Page;
+=======
+import Image from "next/image";
+
+export default function Home() {
+  return (
+    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
+      console.log(oi)
+    </div>
+  );
+}
+>>>>>>> 6fe55e12055a4b6a497ae3e4ee2fba7e8f65ee30
