@@ -16,6 +16,9 @@ const LandingPage = () => {
       {/* Header */}
       <LandingHeader />
 
+
+
+
       {/* Conteúdo principal */}
       <main className="flex-grow">
         {/* Seção Sobre */}
