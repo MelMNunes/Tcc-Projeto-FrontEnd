@@ -5,6 +5,7 @@ interface ModalConfirmacaoProps {
     onClose: () => void;
     onConfirm: () => void;
     detalhes: {
+      servico: string;
       funcionario: string;
       data: string;
       horario: string;
@@ -19,6 +20,7 @@ interface ModalConfirmacaoProps {
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
       <div className="bg-white p-6 rounded-2xl shadow-lg w-96">
         <h2 className="text-xl font-semibold mb-4">Confirmação de Agendamento</h2>
+        <p><strong>Serviços Escolhidos:</strong> {detalhes.servico}</p>
         <p><strong>Funcionário:</strong> {detalhes.funcionario}</p>
         <p><strong>Data:</strong> {detalhes.data}</p>
         <p><strong>Horário:</strong> {detalhes.horario}</p>
