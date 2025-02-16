@@ -12,6 +12,7 @@ const FormularioAgendamento: React.FC<FormularioAgendamentoProps> = ({
 }) => {
   const [mostrarModal, setMostrarModal] = useState(false);
   const [funcionarios, setFuncionarios] = useState<{ id: number; nome: string }[]>([]);
+  const [servicos, setServicos] = useState<{ id: number; nome: string; preco: number }[]>([]);
 
   useEffect(() => {
     fetch("http://localhost:8080/api/usuarios/agendamento/funcionarios")
@@ -20,20 +21,58 @@ const FormularioAgendamento: React.FC<FormularioAgendamentoProps> = ({
       .catch((err) => console.error("Erro ao carregar funcionários", err));
   }, []);
 
-  const avancarPasso = () => setPassoAtual((prev) => Math.min(prev + 1, 4));
-  const voltarPasso = () => setPassoAtual((prev) => Math.max(prev - 1, 0));
+  useEffect(() => {
+    fetch("http://localhost:8080/api/servicos/listarServicos")
+      .then((res) => res.json())
+      .then(setServicos)
+      .catch((err) => console.error("Erro ao carregar serviços", err));
+  }, []);
 
   const [detalhesAgendamento, setDetalhesAgendamento] = useState({
+    servico: "",
     funcionario: "",
     data: "",
     horario: "",
     outros: "",
   });
 
+  const avancarPasso = () => {
+    if (passoAtual === 0 && detalhesAgendamento.servico === "") {
+      alert("Por favor, selecione um serviço antes de continuar.");
+      return;
+    }
+    setPassoAtual((prev) => Math.min(prev + 1, 5));
+  };
+
+  const voltarPasso = () => setPassoAtual((prev) => Math.max(prev - 1, 0));
+
   const renderizarPasso = () => {
     return (
       <div className="space-y-4">
         {passoAtual === 0 && (
+          <div>
+            <h2 className="text-xl font-semibold">Escolha o Serviço</h2>
+            <select
+              className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onChange={(e) =>
+                setDetalhesAgendamento((prev) => ({ ...prev, servico: e.target.value }))
+              }
+            >
+              <option value="">Selecione um serviço</option>
+              {servicos.length > 0 ? (
+                servicos.map((servico) => (
+                  <option key={servico.id} value={servico.nome}>
+                    {servico.nome} - R$ {servico.preco.toFixed(2)}
+                  </option>
+                ))
+              ) : (
+                <option disabled>Carregando...</option>
+              )}
+            </select>
+          </div>
+        )}
+
+        {passoAtual === 1 && (
           <div>
             <h2 className="text-xl font-semibold">Escolha o Funcionário</h2>
             <select
@@ -56,7 +95,7 @@ const FormularioAgendamento: React.FC<FormularioAgendamentoProps> = ({
           </div>
         )}
 
-        {passoAtual === 1 && (
+        {passoAtual === 2 && (
           <div>
             <h2 className="text-xl font-semibold">Escolha a Data</h2>
             <input
@@ -69,7 +108,7 @@ const FormularioAgendamento: React.FC<FormularioAgendamentoProps> = ({
           </div>
         )}
 
-        {passoAtual === 2 && (
+        {passoAtual === 3 && (
           <div>
             <h2 className="text-xl font-semibold">Escolha o Horário</h2>
             <input
@@ -82,7 +121,7 @@ const FormularioAgendamento: React.FC<FormularioAgendamentoProps> = ({
           </div>
         )}
 
-        {passoAtual === 3 && (
+        {passoAtual === 4 && (
           <div>
             <h2 className="text-xl font-semibold">Detalhes do Agendamento</h2>
             <textarea
@@ -95,7 +134,7 @@ const FormularioAgendamento: React.FC<FormularioAgendamentoProps> = ({
           </div>
         )}
 
-        {passoAtual === 4 && <h2 className="text-xl font-semibold">Confirmação</h2>}
+        {passoAtual === 5 && <h2 className="text-xl font-semibold">Confirmação</h2>}
 
         <div className="flex justify-between border-t pt-4">
           {passoAtual > 0 && (
@@ -108,13 +147,13 @@ const FormularioAgendamento: React.FC<FormularioAgendamentoProps> = ({
           )}
           <button
             className={`px-4 py-2 rounded-lg shadow-md transition ${
-              passoAtual === 4
+              passoAtual === 5
                 ? "bg-green-500 hover:bg-green-600 text-white"
                 : "bg-blue-500 hover:bg-blue-600 text-white"
             }`}
-            onClick={passoAtual === 4 ? () => setMostrarModal(true) : avancarPasso}
+            onClick={passoAtual === 5 ? () => setMostrarModal(true) : avancarPasso}
           >
-            {passoAtual === 4 ? "Confirmar" : "Próximo"}
+            {passoAtual === 5 ? "Confirmar" : "Próximo"}
           </button>
         </div>
       </div>
