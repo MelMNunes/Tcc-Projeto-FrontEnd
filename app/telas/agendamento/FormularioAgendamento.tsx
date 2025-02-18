@@ -36,6 +36,8 @@ const FormularioAgendamento: React.FC<FormularioAgendamentoProps> = ({
     outros: "",
   });
 
+  
+
   const handleServicoChange = (servicoNome: string) => {
     setDetalhesAgendamento((prev) => {
       const jaSelecionado = prev.servicos.includes(servicoNome);

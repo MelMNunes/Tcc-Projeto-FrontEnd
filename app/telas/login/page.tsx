@@ -58,21 +58,30 @@ const LoginCadastro = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-
+  
     try {
       const response = await login({ login: email, senha: password });
 
+      console.log("Resposta do login:", response); // Verificar o que está sendo retornado
+
       if (response.token) {
+        
         localStorage.setItem("token", response.token);
         localStorage.setItem("tipoDeUsuario", response.tipoDeUsuario);
         localStorage.setItem("nome", response.nome);
+        localStorage.setItem("id", response.id);
+        
+        // Salvar todos os dados de usuário em 'user' no localStorage
+        localStorage.setItem("user", JSON.stringify({
+          nome: response.nome,
+          email: email,  // ou pegar diretamente do response se já estiver no retorno
+          tipoDeUsuario: response.tipoDeUsuario
+        }));
 
-        // if (response.nome) {
-        //   localStorage.setItem("user", JSON.stringify({ nome: response.nome }));
-        // }
-
+        console.log("nome salvo no storage:", response.nome);
+  
         alert("Login realizado com sucesso!");
-
+  
         switch (response.tipoDeUsuario) {
           case "ADMINISTRADOR":
             router.push("/telas/administradores");
@@ -84,17 +93,20 @@ const LoginCadastro = () => {
             router.push("/telas/clientes");
             break;
           default:
+            console.error("Tipo de usuário não reconhecido:", response.tipoDeUsuario);
             router.push("/");
         }
       } else {
         setError("Erro ao fazer login. Verifique suas credenciais.");
       }
     } catch (err) {
+      console.error("Erro no login:", err);
       setError(
         err instanceof Error ? err.message : "Erro desconhecido ao fazer login."
       );
     }
   };
+  
 
   const handleCadastro = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,21 +142,13 @@ const LoginCadastro = () => {
       <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md">
         <div className="flex justify-center mb-6">
           <button
-            className={`px-4 py-2 font-bold ${
-              activeTab === "login"
-                ? "border-b-2 border-blue-500 text-blue-500"
-                : "text-gray-500"
-            }`}
+            className={`px-4 py-2 font-bold ${activeTab === "login" ? "border-b-2 border-blue-500 text-blue-500" : "text-gray-500"}`}
             onClick={() => setActiveTab("login")}
           >
             Login
           </button>
           <button
-            className={`px-4 py-2 font-bold ${
-              activeTab === "cadastro"
-                ? "border-b-2 border-blue-500 text-blue-500"
-                : "text-gray-500"
-            }`}
+            className={`px-4 py-2 font-bold ${activeTab === "cadastro" ? "border-b-2 border-blue-500 text-blue-500" : "text-gray-500"}`}
             onClick={() => setActiveTab("cadastro")}
           >
             Cadastro
