@@ -1,10 +1,15 @@
-'use client';
+// AgendamentoPage.tsx
+"use client";
 
 import React, { useState } from "react";
 import BarraProgresso from "./components/BarraProgresso";
 import FormularioAgendamento from "./FormularioAgendamento";
 
-const AgendamentoPage: React.FC = () => {
+interface AgendamentoPageProps {
+  clienteId: number; // Adicione esta linha para receber o clienteId
+}
+
+const AgendamentoPage: React.FC<AgendamentoPageProps> = ({ clienteId }) => {
   const [passoAtual, setPassoAtual] = useState(0);
 
   return (
@@ -13,9 +18,11 @@ const AgendamentoPage: React.FC = () => {
       <BarraProgresso passoAtual={passoAtual} totalPassos={4} />
       
       {/* Conteúdo dos passos */}
-      {/* <div className="flex flex-col items-center justify-center flex-1"> */}
-        <FormularioAgendamento passoAtual={passoAtual} setPassoAtual={setPassoAtual} />
-      {/* </div> */}
+      <FormularioAgendamento 
+        passoAtual={passoAtual} 
+        setPassoAtual={setPassoAtual} 
+        clienteId={clienteId} // Passa o clienteId para o FormularioAgendamento
+      />
     </div>
   );
 };

@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import AgendamentoPage from "../agendamento/page";
-import { getUsuarioById } from "@/app/services/api"; // Função para buscar dados do cliente
+import AgendamentoPage from "../agendamento/page"; // Certifique-se de que o caminho está correto
+import { getUsuarioById, getAgendamentosByClienteId } from "@/app/services/api"; // Função para buscar dados do cliente e agendamentos
 
 const ClientesPage = () => {
   interface Consulta {
@@ -12,6 +12,7 @@ const ClientesPage = () => {
   }
 
   interface ClienteData {
+    id: number; // Adicione o ID aqui
     nome: string;
     email: string;
     telefone: string;
@@ -22,37 +23,55 @@ const ClientesPage = () => {
   const [nome, setNome] = useState<string>("");
   const [selectedTab, setSelectedTab] = useState("agendamento");
   const [clienteData, setClienteData] = useState<ClienteData | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);  // Estado de carregamento
+  const [loading, setLoading] = useState<boolean>(true); // Estado de carregamento
+  const [agendamentos, setAgendamentos] = useState<Consulta[]>([]); // Estado para armazenar agendamentos
 
   useEffect(() => {
     const userDataString = localStorage.getItem("user");
     console.log("Dados do localStorage:", userDataString);
-  
+
     if (userDataString) {
       try {
         const userData = JSON.parse(userDataString);
         console.log("Usuário recuperado:", userData);
         setNome(userData.nome || "Usuário");
-        
+
         // Aqui, você deve garantir que o ID seja um número
         const userId = Number(localStorage.getItem("id")); // Converte o ID para número
         fetchClienteData(userId); // Passando o id do cliente para buscar os dados
+        fetchAgendamentos(userId); // Passando o id do cliente para buscar os dados
       } catch (error) {
         console.error("Erro ao recuperar dados do usuário:", error);
       }
     }
   }, []);
 
-  const fetchClienteData = async (userId: number) => {  // Aqui estamos usando o parâmetro userId
+  const fetchClienteData = async (userId: number) => {
     setLoading(true);
     try {
       const data = await getUsuarioById(userId); // Passando userId para a função getUsuarioById
       setClienteData(data);
       console.log("Dados do cliente recuperados com sucesso:", data);
+
+      // Armazenar o ID do cliente no local storage
+      localStorage.setItem("userId", data.id.toString()); // Armazena o ID do cliente
     } catch (error) {
       console.error("Erro ao buscar dados do cliente:", error);
     } finally {
       setLoading(false); // Alterando o estado de carregamento
+    }
+  };
+
+  const fetchAgendamentos = async (userId: number) => {
+    try {
+      const data = await getAgendamentosByClienteId(userId);
+      setAgendamentos(data);
+      console.log("Agendamentos recuperados com sucesso:", data);
+    } catch (error) {
+      console.error("Erro ao buscar agendamentos:", error);
+      if (error instanceof Error) {
+        console.error("Mensagem de erro:", error.message);
+      }
     }
   };
 
@@ -129,30 +148,64 @@ const ClientesPage = () => {
             <>
               {selectedTab === "agendamento" && (
                 <div>
-                  <h2 className="text-xl font-semibold mb-2">Agendar uma Consulta</h2>
-                  <AgendamentoPage />
+                  <h2 className="text-xl font-semibold mb-2">
+                    Agendar uma Consulta
+                  </h2>
+                  {/* Verifica se clienteData não é null antes de passar o clienteId */}
+                  {clienteData ? (
+                    <AgendamentoPage clienteId={clienteData.id} />
+                  ) : (
+                    <p>Carregando dados do cliente...</p>
+                  )}
                 </div>
               )}
               {selectedTab === "consultas" && (
                 <div>
-                  <h2 className="text-xl font-semibold mb-2">Próximas Consultas</h2>
-                  {clienteData?.proximasConsultas && clienteData.proximasConsultas.length > 0 ? (
+                  <h2 className="text-xl font-semibold mb-2">
+                    Próximas Consultas
+                  </h2>
+                  {agendamentos.length > 0 ? (
                     <ul>
-                      {clienteData.proximasConsultas.map((consulta) => (
-                        <li key={consulta.id}>
-                          {consulta.data} - {consulta.servico}
+                      {agendamentos.map((consulta) => (
+                        <li key={consulta.id} className="mb-2">
+                          {/* Formatação da data e hora */}
+                          <p>
+                            <strong>Consulta com Funcionário:</strong>{" "}
+                            {consulta.funcionarioId}{" "}
+                            {/* Aqui você pode substituir pelo nome do funcionário, se disponível */}
+                          </p>
+                          <p>
+                            <strong>Dia:</strong>{" "}
+                            {new Date(consulta.dataHora).toLocaleDateString()}{" "}
+                            {/* Formata a data */}
+                          </p>
+                          <p>
+                            <strong>Horário:</strong>{" "}
+                            {new Date(consulta.dataHora).toLocaleTimeString(
+                              [],
+                              { hour: "2-digit", minute: "2-digit" }
+                            )}{" "}
+                            {/* Formata a hora */}
+                          </p>
+                          <p>
+                            <strong>Serviço:</strong> {consulta.servicoId}{" "}
+                            {/* Aqui você pode substituir pelo nome do serviço, se disponível */}
+                          </p>
                         </li>
                       ))}
                     </ul>
                   ) : (
-                    <p className="text-gray-600">Você não tem próximas consultas agendadas.</p>
+                    <p className="text-gray-600">
+                      Você não tem próximas consultas agendadas.
+                    </p>
                   )}
                 </div>
               )}
               {selectedTab === "historico" && (
                 <div>
                   <h2 className="text-xl font-semibold mb-2">Histórico</h2>
-                  {clienteData?.historico && clienteData.historico.length > 0 ? (
+                  {clienteData?.historico &&
+                  clienteData.historico.length > 0 ? (
                     <ul>
                       {clienteData.historico.map((consulta) => (
                         <li key={consulta.id}>
@@ -161,7 +214,9 @@ const ClientesPage = () => {
                       ))}
                     </ul>
                   ) : (
-                    <p className="text-gray-600">Você ainda não tem histórico de consultas.</p>
+                    <p className="text-gray-600">
+                      Você ainda não tem histórico de consultas.
+                    </p>
                   )}
                 </div>
               )}
@@ -181,7 +236,9 @@ const ClientesPage = () => {
                       </p>
                     </div>
                   ) : (
-                    <p className="text-gray-600">Carregando informações do perfil...</p>
+                    <p className="text-gray-600">
+                      Carregando informações do perfil...
+                    </p>
                   )}
                 </div>
               )}

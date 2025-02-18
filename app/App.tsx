@@ -1,21 +1,16 @@
-// import React from 'react';
-// import ReactDOM from 'react-dom/client'; // Importação correta
-// import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-// import LandingPage from './landing/page';
-// import Agendamento from './cliente/agendamento/pages/Agendamento';
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import Login from './telas/login/page'; // Ajuste o caminho conforme necessário
 
-// const App = () => {
-//     return (
-//         <Router>
-//             <Routes>
-//                 <Route path="/" element={<LandingPage />} />
-//                 <Route path="/agendamento" element={<Agendamento />} />
-//                 {/* Adicione outras rotas conforme necessário */}
-//             </Routes>
-//         </Router>
-//     );
-// };
+const App = () => {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<Login />} />
+        {/* Adicione outras rotas conforme necessário */}
+      </Routes>
+    </Router>
+  );
+};
 
-// // Método correto para React 18
-// const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
-// root.render(<App />);
+export default App; // Certifique-se de que está exportando o componente
