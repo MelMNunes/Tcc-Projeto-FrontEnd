@@ -35,12 +35,47 @@ const UserModal = ({ isOpen, onClose, onSave }: UserModalProps) => {
     setUserData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Dados enviados:", userData);
-    onSave(userData);
-    onClose();
+  
+    let endpoint = "http://localhost:8080/api/usuarios/cadastrar-cliente";
+  
+    if (userData.tipoDeUsuario === "FUNCIONARIO") {
+      endpoint = "http://localhost:8080/api/usuarios/cadastrar-funcionario";
+    } else if (userData.tipoDeUsuario === "ADMINISTRADOR") {
+      endpoint = "http://localhost:8080/api/usuarios/cadastrar-administrador";
+    }
+  
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify(userData),
+      });
+  
+      // Verifica se o backend está retornando JSON ou texto
+      const responseText = await response.text();
+      console.log("Resposta do servidor:", responseText);
+  
+      try {
+        const jsonData = JSON.parse(responseText); // Tenta converter para JSON
+        console.log("Usuário cadastrado:", jsonData);
+        onSave(jsonData);
+      } catch {
+        console.warn("Resposta não é JSON válido:", responseText);
+      }
+      
+  
+      onClose();
+    } catch (error) {
+      console.error("Erro ao cadastrar usuário:", error);
+    }
   };
+  
+  
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">

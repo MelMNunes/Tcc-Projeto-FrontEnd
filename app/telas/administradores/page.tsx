@@ -1,39 +1,22 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-// import LandingFooter from "@/app/landing/LandingFooter";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import UserModal from "@/app/telas/administradores/UserModal";
-// import MaskedInput from "@/app/components/InputMask";
-
 
 interface Usuario {
   id: number;
   nome: string;
-  tipodeusuario: string;
+  tipoDeUsuario?: string;
 }
 
 const AdminPage = () => {
   const router = useRouter();
   const [selectedTab, setSelectedTab] = useState("usuarios");
-  // const [isScrolledToBottom, setIsScrolledToBottom] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [filter, setFilter] = useState("todos");
   const [search, setSearch] = useState("");
   const [users, setUsers] = useState<Usuario[]>([]);
-
-  // useEffect(() => {
-  //   if (typeof window !== "undefined") {
-  //     const handleScroll = () => {
-  //       const isBottom =
-  //         window.innerHeight + window.scrollY >= document.body.offsetHeight;
-  //       setIsScrolledToBottom(isBottom);
-  //     };
-  //     window.addEventListener("scroll", handleScroll);
-  //     return () => window.removeEventListener("scroll", handleScroll);
-  //   }
-  // }, []);
 
   useEffect(() => {
     fetchUsers();
@@ -47,9 +30,9 @@ const AdminPage = () => {
 
   const fetchUsers = async () => {
     try {
-      let endpoint = "http://localhost:8080/api/usuarios/listar/todos"; // Ajusta para o formato correto
+      let endpoint = "http://localhost:8080/api/usuarios/listar/todos";
       if (filter !== "todos") {
-        endpoint = `http://localhost:8080/api/usuarios/listar/${filter}`; // Usa / ao invés de query param
+        endpoint = `http://localhost:8080/api/usuarios/listar/${filter}`;
       }
 
       const response = await fetch(endpoint, {
@@ -65,56 +48,11 @@ const AdminPage = () => {
       }
 
       const data: Usuario[] = await response.json();
+      console.log("Usuários recebidos:", data); // Verificar os dados no console
+
       setUsers(data);
     } catch (error) {
       console.error("Erro ao buscar usuários:", error);
-    }
-  };
-
-  const handleSaveUser = async (newUser: {
-    nome: string;
-    email: string;
-    cpf: string;
-    telefone: string;
-    senha: string;
-    tipoDeUsuario: string;
-  }) => {
-    try {
-      let endpoint = "api/usuarios";
-
-      switch (newUser.tipoDeUsuario?.toUpperCase()) {
-        case "CLIENTE":
-          endpoint = "http://localhost:8080/api/usuarios/cadastrar-cliente";
-          break;
-        case "FUNCIONARIO":
-          endpoint = "http://localhost:8080/api/usuarios/cadastrar-funcionario";
-          break;
-        case "ADMINISTRADOR":
-          endpoint =
-            "http://localhost:8080/api/usuarios/cadastrar-administrador";
-          break;
-        default:
-          throw new Error("Tipo de usuário inválido");
-      }
-
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify(newUser),
-      });
-
-      if (!response.ok) {
-        throw new Error("Erro ao cadastrar usuário");
-      }
-
-      const savedUser = await response.text();
-      console.log(savedUser); // Exibe a string diretamente
-    } catch (error) {
-      console.error(error);
-      alert("Erro no json ao cadastrar usuário. Tente novamente.");
     }
   };
 
@@ -132,7 +70,7 @@ const AdminPage = () => {
       );
 
       if (!response.ok) {
-        throw new Error(`Erro ao excluir   usuários: ${response.status}`);
+        throw new Error(`Erro ao excluir usuários: ${response.status}`);
       }
 
       fetchUsers();
@@ -141,40 +79,15 @@ const AdminPage = () => {
     }
   };
 
-  // const handleEditUser = (userId: number) => {
-  //   const user = users.find((user) => user.id === userId);
-  //   if (user) {
-  //     console.log("Editando usuário:", user);
-  //   }
-  // };
-
   return (
-    <div className="flex flex-col min-h-screen text-black bg-gray-100">
-      <header className="fixed top-0 left-0 w-full bg-white p-4 shadow-md flex justify-between items-center z-10">
-        <h1 className="text-xl font-semibold">Painel do Administrador</h1>
-        <div className="ml-auto">
-          <Link href="/telas/recepcao">
-            <span className="bg-white text-blue-500 px-4 py-2 rounded hover:bg-blue-700 hover:text-white">
-              Modo Recepção
-            </span>
-          </Link>
-        </div>
-        <button
-          className="text-red-500 hover:text-red-700 hover:bg-gray-200 px-4 py-2 rounded"
-          onClick={handleLogout}
-        >
-          Sair
-        </button>
-      </header>
-
-      <div className="flex flex-grow w-full max-w-5xl mx-auto mt-16">
-        <nav className="w-1/4 bg-white p-4 shadow-md h-screen fixed left-0 top-16">
+    <div className="flex min-h-screen text-black bg-gray-100">
+      <nav className="w-64 bg-white p-4 shadow-md h-screen fixed top-0 left-0 flex flex-col justify-between">
+        <div>
+          <h1 className="text-lg font-semibold mb-6 text-center">Painel</h1>
           <ul className="space-y-2">
             <li
               className={`p-2 rounded cursor-pointer ${
-                selectedTab === "usuarios"
-                  ? "bg-blue-500 text-white"
-                  : "hover:bg-gray-200"
+                selectedTab === "usuarios" ? "bg-blue-500 text-white" : "hover:bg-gray-200"
               }`}
               onClick={() => setSelectedTab("usuarios")}
             >
@@ -182,24 +95,42 @@ const AdminPage = () => {
             </li>
             <li
               className={`p-2 rounded cursor-pointer ${
-                selectedTab === "financeiro"
-                  ? "bg-blue-500 text-white"
-                  : "hover:bg-gray-200"
+                selectedTab === "financeiro" ? "bg-blue-500 text-white" : "hover:bg-gray-200"
               }`}
               onClick={() => setSelectedTab("financeiro")}
             >
               Controle Financeiro
             </li>
+            <li
+              className={`p-2 rounded cursor-pointer ${
+                selectedTab === "recepcao" ? "bg-blue-500 text-white" : "hover:bg-gray-200"
+              }`}
+              onClick={() => router.push("/telas/recepcao")}
+            >
+              Modo Recepção
+            </li>
           </ul>
-        </nav>
+        </div>
+        <button
+          className="bg-red-500 text-white rounded px-4 py-2 hover:bg-red-600 w-full"
+          onClick={handleLogout}
+        >
+          Sair
+        </button>
+      </nav>
 
-        <main className="w-3/4 bg-white p-6 rounded-lg shadow-md ml-auto mt-16">
+      <div className="flex flex-col flex-grow ml-64 min-h-screen">
+        <header className="w-full bg-white shadow-md p-4">
+          <h2 className="text-2xl font-semibold">Tela do Administrador</h2>
+        </header>
+
+        <main className="flex-grow p-8">
           {selectedTab === "usuarios" && (
-            <div>
-              <h2 className="text-xl font-semibold mb-2">Gerenciar Usuários</h2>
+            <section>
+              <h2 className="text-2xl font-semibold mb-4">Gerenciar Usuários</h2>
               <div className="flex gap-4 mb-4">
                 <button
-                  className="bg-blue-500 text-white px-4 py-2 rounded"
+                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
                   onClick={() => setModalOpen(true)}
                 >
                   Cadastrar Novo Usuário
@@ -222,33 +153,36 @@ const AdminPage = () => {
                   onChange={(e) => setSearch(e.target.value)}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                {users
-                  .filter((user) =>
-                    user.nome.toLowerCase().includes(search.toLowerCase())
-                  )
-                  .map((user) => (
-                    <div key={user.id} className="border p-4 rounded shadow-md">
-                      <h3 className="font-semibold">{user.nome}</h3>
-                      <p className="text-gray-600">{user.tipodeusuario}</p>
-                      <button
-                        className="text-blue-500 mt-2"
-                        //   value={user.id}
-                        //   onClick={() => handleEditUser(user.id)}
-                      >
-                        Editar
-                      </button>
-                      <button
-                        className="text-red-500 ml-2"
-                        value={user.id}
-                        onClick={() => handleDeleteUser(user.id)}
-                      >
-                        Excluir
-                      </button>
-                    </div>
-                  ))}
-              </div>
-            </div>
+              {users.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {users
+                    .filter((user) =>
+                      user.nome.toLowerCase().includes(search.toLowerCase())
+                    )
+                    .map((user) => {
+                      console.log("Usuário exibido:", user); // Verificar dados
+                      return (
+                        <div key={user.id} className="p-4 border rounded-lg shadow">
+                          <p>
+                            <strong>Nome:</strong> {user.nome}
+                          </p>
+                          <p>
+                            <strong>Tipo:</strong> {user.tipoDeUsuario || "Tipo não informado"}
+                          </p>
+                          <button
+                            className="text-red-500 mt-2"
+                            onClick={() => handleDeleteUser(user.id)}
+                          >
+                            Excluir
+                          </button>
+                        </div>
+                      );
+                    })}
+                </div>
+              ) : (
+                <p className="text-gray-600">Nenhum usuário encontrado.</p>
+              )}
+            </section>
           )}
         </main>
       </div>
@@ -257,23 +191,9 @@ const AdminPage = () => {
         <UserModal
           isOpen={modalOpen}
           onClose={() => setModalOpen(false)}
-          onSave={handleSaveUser}
+          onSave={() => fetchUsers()}
         />
       )}
-
-      {/* <MaskedInput
-        type="cpf"
-        value={cpf}
-        onChange={(e) => setCpf(e.target.value)}
-      />
-
-      <MaskedInput
-        type="telefone"
-        value={telefone}
-        onChange={(e) => setTelefone(e.target.value)}
-      /> */}
-
-      {/* <div className="w-full">{isScrolledToBottom && <LandingFooter />}</div> */}
     </div>
   );
 };

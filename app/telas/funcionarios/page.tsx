@@ -2,72 +2,111 @@
 
 import React, { useEffect, useState } from "react";
 import AgendamentoPage from "../agendamento/page";
-import { getAgendamentosByFuncionarioId } from "@/app/services/api";
-
-interface Consulta {
-  id: number;
-  funcionario: {
-    nome: string;
-  };
-  dataHora: string;
-  servico: {
-    nome: string;
-  };
-}
+import { getUsuarioById, getAgendamentosByFuncionarioId } from "@/app/services/api";
 
 const FuncionariosPage = () => {
+  interface Consulta {
+    id: number;
+    dataHora: string;
+    servicoNome: string;
+    clienteNome: string;
+  }
+
+  interface FuncionarioData {
+    id: number;
+    nome: string;
+    email: string;
+    telefone: string;
+    proximasConsultas: Consulta[];
+    historico: Consulta[];
+  }
+
+  const [nome, setNome] = useState<string>("");
   const [selectedTab, setSelectedTab] = useState("agendamento");
-  const [consultas, setConsultas] = useState<Consulta[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [proximasConsultas, setProximasConsultas] = useState<Consulta[]>([]);
-  const [clienteId, setClienteId] = useState<number | null>(null);
+  const [funcionarioData, setFuncionarioData] = useState<FuncionarioData | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [agendamentos, setAgendamentos] = useState<Consulta[]>([]);
 
   useEffect(() => {
-    const userId = Number(localStorage.getItem("id"));
-    fetchConsultas(userId);
-    fetchProximasConsultas(userId);
-    setClienteId(userId); // Altere isso para a lógica correta que define o clienteId
-  }, []);
-  useEffect(() => {
-    const userId = Number(localStorage.getItem("id"));
-    fetchConsultas(userId);
-    fetchProximasConsultas(userId);
+    const userDataString = localStorage.getItem("user");
+
+    if (userDataString) {
+      try {
+        const userData = JSON.parse(userDataString);
+        setNome(userData.nome || "Usuário");
+
+        const userId = Number(localStorage.getItem("id"));
+        fetchFuncionarioData(userId);
+        fetchAgendamentos(userId);
+      } catch (error) {
+        console.error("Erro ao recuperar dados do funcionário:", error);
+      }
+    }
   }, []);
 
-  const fetchConsultas = async (funcionarioId: number) => {
+  const fetchFuncionarioData = async (userId: number) => {
     setLoading(true);
     try {
-      const response = await fetch(
-        `http://localhost:8080/api/agendamentos/funcionarios/${funcionarioId}`
-      );
-      const data = await response.json();
-      setConsultas(data);
+      const data = await getUsuarioById(userId);
+      setFuncionarioData(data);
     } catch (error) {
-      console.error("Erro ao buscar consultas:", error);
+      console.error("Erro ao buscar dados do funcionário:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchProximasConsultas = async (userId: number) => {
-    setLoading(true);
+  const fetchAgendamentos = async (userId: number) => {
     try {
       const data = await getAgendamentosByFuncionarioId(userId);
-      console.log("Dados das próximas consultas:", data); // Adicione este log
-      setProximasConsultas(data.proximasConsultas || []); // Use um fallback para evitar undefined
+      setAgendamentos(data);
     } catch (error) {
-      console.error("Erro ao buscar próximas consultas:", error);
-    } finally {
-      setLoading(false);
+      console.error("Erro ao buscar agendamentos:", error);
     }
   };
 
   return (
-    <div className="flex flex-col min-h-screen text-black bg-gray-100">
-      <header className="fixed top-0 left-0 w-full bg-white p-4 shadow-md flex items-center justify-between z-10">
-        <h1 className="text-xl font-semibold">Painel do Funcionário</h1>
+    <div className="flex min-h-screen text-black bg-gray-100">
+      <nav className="w-64 bg-white p-4 shadow-md h-screen fixed top-0 left-0 flex flex-col justify-between">
+        <div>
+          <h1 className="text-lg font-semibold mb-6 text-center">Painel</h1>
+          <ul className="space-y-2">
+            <li
+              className={`p-2 rounded cursor-pointer ${
+                selectedTab === "agendamento" ? "bg-blue-500 text-white" : "hover:bg-gray-200"
+              }`}
+              onClick={() => setSelectedTab("agendamento")}
+            >
+              Agendamento
+            </li>
+            <li
+              className={`p-2 rounded cursor-pointer ${
+                selectedTab === "consultas" ? "bg-blue-500 text-white" : "hover:bg-gray-200"
+              }`}
+              onClick={() => setSelectedTab("consultas")}
+            >
+              Próximas Consultas
+            </li>
+            <li
+              className={`p-2 rounded cursor-pointer ${
+                selectedTab === "historico" ? "bg-blue-500 text-white" : "hover:bg-gray-200"
+              }`}
+              onClick={() => setSelectedTab("historico")}
+            >
+              Histórico
+            </li>
+            <li
+              className={`p-2 rounded cursor-pointer ${
+                selectedTab === "perfil" ? "bg-blue-500 text-white" : "hover:bg-gray-200"
+              }`}
+              onClick={() => setSelectedTab("perfil")}
+            >
+              Perfil
+            </li>
+          </ul>
+        </div>
         <button
-          className="bg-red-500 text-white rounded px-4 py-2 hover:bg-red-600"
+          className="bg-red-500 text-white rounded px-4 py-2 hover:bg-red-600 w-full"
           onClick={() => {
             localStorage.removeItem("user");
             localStorage.removeItem("token");
@@ -76,149 +115,59 @@ const FuncionariosPage = () => {
         >
           Sair
         </button>
-      </header>
+      </nav>
 
-      {/* Layout Principal */}
-      <div className="flex flex-grow w-full max-w-5xl mx-auto mt-16">
-        {/* Menu Lateral Fixo */}
-        <nav className="w-1/4 bg-white p-4 shadow-md h-screen fixed left-0 top-16">
-          <ul className="space-y-2">
-            <li
-              className={`p-2 rounded cursor-pointer ${
-                selectedTab === "agendamento"
-                  ? "bg-blue-500 text-white"
-                  : "hover:bg-gray-200"
-              }`}
-              onClick={() => setSelectedTab("agendamento")}
-            >
-              Agendamento
-            </li>
-            <li
-              className={`p-2 rounded cursor-pointer ${
-                selectedTab === "consultas"
-                  ? "bg-blue-500 text-white"
-                  : "hover:bg-gray-200"
-              }`}
-              onClick={() => setSelectedTab("consultas")}
-            >
-              Consultas
-            </li>
-            <li
-              className={`p-2 rounded cursor-pointer ${
-                selectedTab === "anamnese"
-                  ? "bg-blue-500 text-white"
-                  : "hover:bg-gray-200"
-              }`}
-              onClick={() => setSelectedTab("anamnese")}
-            >
-              Upload de Anamnese
-            </li>
-            <li
-              className={`p-2 rounded cursor-pointer ${
-                selectedTab === "notas"
-                  ? "bg-blue-500 text-white"
-                  : "hover:bg-gray-200"
-              }`}
-              onClick={() => setSelectedTab("notas")}
-            >
-              Notas Internas
-            </li>
-          </ul>
-        </nav>
+      <div className="flex flex-col flex-grow ml-64 min-h-screen">
+        <header className="w-full bg-white shadow-md p-4">
+          <h2 className="text-2xl font-semibold">Tela do Funcionário</h2>
+          <p className="text-gray-600">Bem-vindo, {nome}</p>
+        </header>
 
-        {/* Área de Conteúdo */}
-        <main className="w-3/4 bg-white p-6 rounded-lg shadow-md ml-auto mt-16">
-          {selectedTab === "agendamento" && (
-            <div>
-              <h2 className="text-xl font-semibold mb-2">Agendamento</h2>
-              {clienteId !== null ? (
-                <AgendamentoPage clienteId={clienteId} />
-              ) : (
-                <p className="text-gray-600">Carregando dados do cliente...</p>
+        <main className="flex-grow p-8">
+          {loading ? (
+            <p className="text-gray-600">Carregando informações...</p>
+          ) : (
+            <>
+              {selectedTab === "agendamento" && (
+                <section>
+                  <h2 className="text-2xl font-semibold mb-4">Agendamento</h2>
+                  {funcionarioData ? (
+                    <AgendamentoPage clienteId={funcionarioData.id} />
+                  ) : (
+                    <p className="text-gray-600">Carregando dados do funcionário...</p>
+                  )}
+                </section>
               )}
-            </div>
+
+              {selectedTab === "consultas" && (
+                <section>
+                  <h2 className="text-2xl font-semibold mb-4">Próximas Consultas</h2>
+                  {agendamentos.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {agendamentos.map((consulta) => (
+                        <div key={consulta.id} className="p-4 border rounded-lg shadow">
+                          <p>
+                            <strong>Cliente:</strong> {consulta.clienteNome || "Desconhecido"}
+                          </p>
+                          <p>
+                            <strong>Data:</strong> {new Date(consulta.dataHora).toLocaleDateString()}
+                          </p>
+                          <p>
+                            <strong>Horário:</strong> {new Date(consulta.dataHora).toLocaleTimeString()}
+                          </p>
+                          <p>
+                            <strong>Serviço:</strong> {consulta.servicoNome || "Não informado"}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-600">Nenhuma consulta encontrada.</p>
+                  )}
+                </section>
+              )}
+            </>
           )}
-          {consultas.map((consulta) => (
-            <div key={consulta.id} className="p-6 border rounded-lg shadow-lg">
-              <p>
-                <strong>Funcionário:</strong>{" "}
-                {consulta.funcionario
-                  ? consulta.funcionario.nome
-                  : "Funcionário não disponível"}
-              </p>
-              <p>
-                <strong>Dia:</strong>{" "}
-                {new Date(consulta.dataHora).toLocaleDateString()}
-              </p>
-              <p>
-                <strong>Horário:</strong>{" "}
-                {new Date(consulta.dataHora).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </p>
-              <p>
-                <strong>Serviço:</strong>{" "}
-                {consulta.servico
-                  ? consulta.servico.nome
-                  : "Serviço não disponível"}
-              </p>
-            </div>
-          ))}
-          {selectedTab === "anamnese" && (
-            <div>
-              <h2 className="text-xl font-semibold mb-2">Upload de Anamnese</h2>
-              <p className="text-gray-600">
-                Espaço para upload de imagens relacionadas à anamnese do
-                paciente.
-              </p>
-            </div>
-          )}
-          {selectedTab === "notas" && (
-            <div>
-              <h2 className="text-xl font-semibold mb-2">Notas Internas</h2>
-              <p className="text-gray-600">
-                Área para adicionar e visualizar notas sobre os pacientes.
-              </p>
-            </div>
-          )}
-          <div className="mt-8">
-            <h2 className="text-xl font-semibold mb-2">Próximas Consultas</h2>
-            {loading ? (
-              <p className="text-gray-600">Carregando próximas consultas...</p>
-            ) : proximasConsultas.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {proximasConsultas.map((consulta) => (
-                  <div
-                    key={consulta.id}
-                    className="p-6 border rounded-lg shadow-lg"
-                  >
-                    <p>
-                      <strong>Funcionário:</strong> {consulta.funcionario.nome}
-                    </p>
-                    <p>
-                      <strong>Dia:</strong>{" "}
-                      {new Date(consulta.dataHora).toLocaleDateString()}
-                    </p>
-                    <p>
-                      <strong>Horário:</strong>{" "}
-                      {new Date(consulta.dataHora).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </p>
-                    <p>
-                      <strong>Serviço:</strong> {consulta.servico.nome}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-600">
-                Você não tem próximas consultas registradas.
-              </p>
-            )}
-          </div>
         </main>
       </div>
     </div>

@@ -32,23 +32,26 @@ export const getUsuarioById = async (userId) => {
 };
 
 export const getAgendamentosByClienteId = async (clienteId) => {
-  const response = await fetch(
-    `http://localhost:8080/api/agendamentos/clientes/${clienteId}`
-  );
-  if (!response.ok) {
-    throw new Error("Erro ao buscar agendamentos");
+  try {
+    console.log("Chamando API:", `/agendamentos/clientes/${clienteId}`);
+    const response = await api.get(`/agendamentos/clientes/${clienteId}`);
+    return response.data; // Retorna os dados diretamente
+  } catch (error) {
+    console.error("Erro ao buscar agendamentos:", error);
+    throw error;
   }
-  return await response.json();
 };
 
+
 export const getAgendamentosByFuncionarioId = async (funcionarioId) => {
-  const response = await fetch(
-    `http://localhost:8080/api/agendamentos/funcionarios/${funcionarioId}`
-  );
-  if (!response.ok) {
-    throw new Error("Erro ao buscar agendamentos");
+  try {
+    console.log("Chamando API:", `/agendamentos/clientes/${funcionarioId}`);
+    const response = await api.get(`/agendamentos/funcionarios/${funcionarioId}`);
+    return response.data; // Retorna os dados diretamente
+  } catch (error) {
+    console.error("Erro ao buscar agendamentos:", error);
+    throw error;
   }
-  return await response.json();
 };
 
 export default api;
