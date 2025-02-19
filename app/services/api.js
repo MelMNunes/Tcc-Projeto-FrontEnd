@@ -41,4 +41,14 @@ export const getAgendamentosByClienteId = async (clienteId) => {
   return await response.json();
 };
 
+export const getAgendamentosByFuncionarioId = async (funcionarioId) => {
+  const response = await fetch(
+    `http://localhost:8080/api/agendamentos/funcionarios/${funcionarioId}`
+  );
+  if (!response.ok) {
+    throw new Error("Erro ao buscar agendamentos");
+  }
+  return await response.json();
+};
+
 export default api;

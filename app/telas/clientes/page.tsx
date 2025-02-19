@@ -7,8 +7,9 @@ import { getUsuarioById, getAgendamentosByClienteId } from "@/app/services/api";
 const ClientesPage = () => {
   interface Consulta {
     id: number;
-    data: string;
-    servico: string;
+    dataHora: string; // Alterado para dataHora
+    servicoId: number; // ID do serviço
+    funcionarioId: number; // ID do funcionário
   }
 
   interface ClienteData {
@@ -25,6 +26,10 @@ const ClientesPage = () => {
   const [clienteData, setClienteData] = useState<ClienteData | null>(null);
   const [loading, setLoading] = useState<boolean>(true); // Estado de carregamento
   const [agendamentos, setAgendamentos] = useState<Consulta[]>([]); // Estado para armazenar agendamentos
+  const [funcionarios, setFuncionarios] = useState<
+    { id: number; nome: string }[]
+  >([]);
+  const [servicos, setServicos] = useState<{ id: number; nome: string }[]>([]);
 
   useEffect(() => {
     const userDataString = localStorage.getItem("user");
@@ -36,10 +41,11 @@ const ClientesPage = () => {
         console.log("Usuário recuperado:", userData);
         setNome(userData.nome || "Usuário");
 
-        // Aqui, você deve garantir que o ID seja um número
         const userId = Number(localStorage.getItem("id")); // Converte o ID para número
         fetchClienteData(userId); // Passando o id do cliente para buscar os dados
         fetchAgendamentos(userId); // Passando o id do cliente para buscar os dados
+        fetchFuncionarios(); // Busca os funcionários
+        fetchServicos(); // Busca os serviços
       } catch (error) {
         console.error("Erro ao recuperar dados do usuário:", error);
       }
@@ -52,8 +58,6 @@ const ClientesPage = () => {
       const data = await getUsuarioById(userId); // Passando userId para a função getUsuarioById
       setClienteData(data);
       console.log("Dados do cliente recuperados com sucesso:", data);
-
-      // Armazenar o ID do cliente no local storage
       localStorage.setItem("userId", data.id.toString()); // Armazena o ID do cliente
     } catch (error) {
       console.error("Erro ao buscar dados do cliente:", error);
@@ -75,6 +79,30 @@ const ClientesPage = () => {
     }
   };
 
+  const fetchFuncionarios = async () => {
+    try {
+      const response = await fetch(
+        "http://localhost:8080/api/usuarios/agendamento/funcionarios"
+      );
+      const data = await response.json();
+      setFuncionarios(data);
+    } catch (error) {
+      console.error("Erro ao buscar funcionários:", error);
+    }
+  };
+
+  const fetchServicos = async () => {
+    try {
+      const response = await fetch(
+        "http://localhost:8080/api/servicos/listarServicos"
+      );
+      const data = await response.json();
+      setServicos(data);
+    } catch (error) {
+      console.error("Erro ao buscar serviços:", error);
+    }
+  };
+
   useEffect(() => {
     if (selectedTab === "sair") {
       localStorage.removeItem("user");
@@ -85,8 +113,14 @@ const ClientesPage = () => {
 
   return (
     <div className="flex flex-col min-h-screen text-black bg-gray-100">
-      <header className="fixed top-0 left-0 w-full bg-white p-4 shadow-md flex items-center z-10">
+      <header className="fixed top-0 left-0 w-full bg-white p-4 shadow-md flex items-center justify-between z-10">
         <h1 className="text-xl font-semibold">Olá, {nome}!</h1>
+        <button
+          className="bg-red-500 text-white rounded px-4 py-2 hover:bg-red-600"
+          onClick={() => setSelectedTab("sair")}
+        >
+          Sair
+        </button>
       </header>
 
       <div className="flex flex-grow w-full max-w-5xl mx-auto mt-16">
@@ -132,12 +166,6 @@ const ClientesPage = () => {
             >
               Perfil
             </li>
-            <li
-              className={`p-2 rounded cursor-pointer hover:bg-gray-400`}
-              onClick={() => setSelectedTab("sair")}
-            >
-              Sair
-            </li>
           </ul>
         </nav>
 
@@ -151,7 +179,6 @@ const ClientesPage = () => {
                   <h2 className="text-xl font-semibold mb-2">
                     Agendar uma Consulta
                   </h2>
-                  {/* Verifica se clienteData não é null antes de passar o clienteId */}
                   {clienteData ? (
                     <AgendamentoPage clienteId={clienteData.id} />
                   ) : (
@@ -165,35 +192,56 @@ const ClientesPage = () => {
                     Próximas Consultas
                   </h2>
                   {agendamentos.length > 0 ? (
-                    <ul>
-                      {agendamentos.map((consulta) => (
-                        <li key={consulta.id} className="mb-2">
-                          {/* Formatação da data e hora */}
-                          <p>
-                            <strong>Consulta com Funcionário:</strong>{" "}
-                            {consulta.funcionarioId}{" "}
-                            {/* Aqui você pode substituir pelo nome do funcionário, se disponível */}
-                          </p>
-                          <p>
-                            <strong>Dia:</strong>{" "}
-                            {new Date(consulta.dataHora).toLocaleDateString()}{" "}
-                            {/* Formata a data */}
-                          </p>
-                          <p>
-                            <strong>Horário:</strong>{" "}
-                            {new Date(consulta.dataHora).toLocaleTimeString(
-                              [],
-                              { hour: "2-digit", minute: "2-digit" }
-                            )}{" "}
-                            {/* Formata a hora */}
-                          </p>
-                          <p>
-                            <strong>Serviço:</strong> {consulta.servicoId}{" "}
-                            {/* Aqui você pode substituir pelo nome do serviço, se disponível */}
-                          </p>
-                        </li>
-                      ))}
-                    </ul>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {" "}
+                      {/* Mudança aqui */}
+                      {agendamentos.map((consulta) => {
+                        const funcionario = funcionarios.find(
+                          (f) => f.id === consulta.funcionarioId
+                        );
+                        const servico = servicos.find(
+                          (s) => s.id === consulta.servicoId
+                        );
+                        return (
+                          <div
+                            key={consulta.id}
+                            className="p-6 border rounded-lg shadow-lg max-w-lg mx-auto" // Mudança no max-w para travar a largura
+                          >
+                            <p>
+                              <strong>Funcionário:</strong>{" "}
+                              {funcionario
+                                ? funcionario.nome
+                                : "Nome não disponível"}
+                            </p>
+                            <p>
+                              <strong>Dia:</strong>
+                              {consulta.dataHora
+                                ? new Date(
+                                    consulta.dataHora
+                                  ).toLocaleDateString()
+                                : "Data inválida"}
+                            </p>
+                            <p>
+                              <strong>Horário:</strong>
+                              {consulta.dataHora
+                                ? new Date(
+                                    consulta.dataHora
+                                  ).toLocaleTimeString([], {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })
+                                : "Horário inválido"}
+                            </p>
+                            <p>
+                              <strong>Serviço:</strong>{" "}
+                              {servico
+                                ? servico.nome
+                                : "Serviço não disponível"}
+                            </p>
+                          </div>
+                        );
+                      })}
+                    </div>
                   ) : (
                     <p className="text-gray-600">
                       Você não tem próximas consultas agendadas.
@@ -209,7 +257,11 @@ const ClientesPage = () => {
                     <ul>
                       {clienteData.historico.map((consulta) => (
                         <li key={consulta.id}>
-                          {consulta.data} - {consulta.servico}
+                          {/* Removido o acesso a propriedades inexistentes */}
+                          {consulta.dataHora
+                            ? new Date(consulta.dataHora).toLocaleDateString()
+                            : "Data inválida"}{" "}
+                          - Serviço não disponível
                         </li>
                       ))}
                     </ul>
