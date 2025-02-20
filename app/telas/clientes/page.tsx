@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import AgendamentoPage from "../agendamento/page";
-import { getUsuarioById} from "@/app/services/api";
+import { getUsuarioById } from "@/app/services/api";
 
 const ClientesPage = () => {
   interface Consulta {
@@ -70,9 +70,17 @@ const ClientesPage = () => {
 
   const handleDeleteAgendamento = async (id: number) => {
     try {
-      await fetch(`http://localhost:8080/api/agendamentos/${id}`, {
+      const response = await fetch(`http://localhost:8080/api/agendamentos/${id}`, {
         method: "DELETE",
       });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Erro ao excluir agendamento:", errorData);
+        throw new Error("Erro ao excluir agendamento");
+      }
+  
+      // Atualiza a lista de agendamentos
       setAgendamentos((prev) => prev.filter((agendamento) => agendamento.id !== id));
     } catch (error) {
       console.error("Erro ao excluir agendamento:", error);
