@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import AgendamentoPage from "../agendamento/page";
-import { getUsuarioById, getAgendamentosByClienteId } from "@/app/services/api";
+import { getUsuarioById} from "@/app/services/api";
 
 const ClientesPage = () => {
   interface Consulta {
@@ -17,6 +17,8 @@ const ClientesPage = () => {
     nome: string;
     email: string;
     telefone: string;
+    cpf: string;
+    senha: string;
     proximasConsultas: Consulta[];
     historico: Consulta[];
   }
@@ -58,10 +60,22 @@ const ClientesPage = () => {
 
   const fetchAgendamentos = async (userId: number) => {
     try {
-      const data = await getAgendamentosByClienteId(userId);
+      const response = await fetch(`http://localhost:8080/api/agendamentos/clientes/${userId}`);
+      const data = await response.json();
       setAgendamentos(data);
     } catch (error) {
       console.error("Erro ao buscar agendamentos:", error);
+    }
+  };
+
+  const handleDeleteAgendamento = async (id: number) => {
+    try {
+      await fetch(`http://localhost:8080/api/agendamentos/${id}`, {
+        method: "DELETE",
+      });
+      setAgendamentos((prev) => prev.filter((agendamento) => agendamento.id !== id));
+    } catch (error) {
+      console.error("Erro ao excluir agendamento:", error);
     }
   };
 
@@ -72,41 +86,25 @@ const ClientesPage = () => {
           <h1 className="text-lg font-semibold mb-6 text-center">Painel</h1>
           <ul className="space-y-2">
             <li
-              className={`p-2 rounded cursor-pointer ${
-                selectedTab === "agendamento"
-                  ? "bg-blue-500 text-white"
-                  : "hover:bg-gray-200"
-              }`}
+              className={`p-2 rounded cursor-pointer ${selectedTab === "agendamento" ? "bg-blue-500 text-white" : "hover:bg-gray-200"}`}
               onClick={() => setSelectedTab("agendamento")}
             >
               Agendamento
             </li>
             <li
-              className={`p-2 rounded cursor-pointer ${
-                selectedTab === "consultas"
-                  ? "bg-blue-500 text-white"
-                  : "hover:bg-gray-200"
-              }`}
+              className={`p-2 rounded cursor-pointer ${selectedTab === "consultas" ? "bg-blue-500 text-white" : "hover:bg-gray-200"}`}
               onClick={() => setSelectedTab("consultas")}
             >
               Próximas Consultas
             </li>
             <li
-              className={`p-2 rounded cursor-pointer ${
-                selectedTab === "historico"
-                  ? "bg-blue-500 text-white"
-                  : "hover:bg-gray-200"
-              }`}
+              className={`p-2 rounded cursor-pointer ${selectedTab === "historico" ? "bg-blue-500 text-white" : "hover:bg-gray-200"}`}
               onClick={() => setSelectedTab("historico")}
             >
               Histórico
             </li>
             <li
-              className={`p-2 rounded cursor-pointer ${
-                selectedTab === "perfil"
-                  ? "bg-blue-500 text-white"
-                  : "hover:bg-gray-200"
-              }`}
+              className={`p-2 rounded cursor-pointer ${selectedTab === "perfil" ? "bg-blue-500 text-white" : "hover:bg-gray-200"}`}
               onClick={() => setSelectedTab("perfil")}
             >
               Perfil
@@ -142,48 +140,48 @@ const ClientesPage = () => {
                   {clienteData ? (
                     <AgendamentoPage clienteId={clienteData.id} />
                   ) : (
-                    <p className="text-gray-600">
-                      Carregando dados do cliente...
-                    </p>
+                    <p className="text-gray-600">Carregando dados do cliente...</p>
                   )}
                 </section>
               )}
 
               {selectedTab === "consultas" && (
                 <section>
-                  <h2 className="text-2xl font-semibold mb-4">
-                    Próximas Consultas
-                  </h2>
+                  <h2 className="text-2xl font-semibold mb-4">Próximas Consultas</h2>
                   {agendamentos.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {agendamentos.map((consulta) => (
-                        <div
-                          key={consulta.id}
-                          className="p-4 border rounded-lg shadow"
-                        >
-                          <p>
-                            <strong>Funcionário:</strong>{" "}
-                            {consulta.funcionarioNome || "Desconhecido"}
-                          </p>
-                          <p>
-                            <strong>Data:</strong>{" "}
-                            {new Date(consulta.dataHora).toLocaleDateString()}
-                          </p>
-                          <p>
-                            <strong>Horário:</strong>{" "}
-                            {new Date(consulta.dataHora).toLocaleTimeString()}
-                          </p>
-                          <p>
-                            <strong>Serviço:</strong>{" "}
-                            {consulta.servicoNome || "Não informado"}
-                          </p>
+                        <div key={consulta.id} className="p-4 border rounded-lg shadow">
+                          <p><strong>Funcionário:</strong> {consulta.funcionarioNome || "Desconhecido"}</p>
+                          <p><strong>Data:</strong> {new Date(consulta.dataHora).toLocaleDateString()}</p>
+                          <p><strong>Horário:</strong> {new Date(consulta.dataHora).toLocaleTimeString()}</p>
+                          <p><strong>Serviço:</strong> {consulta.servicoNome || "Não informado"}</p>
+                          <div className="flex justify-end mt-2">
+                            <button className="bg-yellow-500 text-white rounded px-2 py-1 mr-2" onClick={() => {/* lógica para editar */}}>Editar</button>
+                            <button className="bg-red-500 text-white rounded px-2 py-1" onClick={() => handleDeleteAgendamento(consulta.id)}>Excluir</button>
+                          </div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-gray-600">
-                      Nenhuma consulta encontrada.
-                    </p>
+                    <p className="text-gray-600">Nenhuma consulta encontrada.</p>
+                  )}
+                </section>
+              )}
+
+              {selectedTab === "perfil" && (
+                <section>
+                  <h2 className="text-2xl font-semibold mb-4">Perfil</h2>
+                  {clienteData ? (
+                    <div className="space-y-4">
+                      <div><strong>Nome:</strong> {clienteData.nome}</div>
+                      <div><strong>CPF:</strong> {clienteData.cpf}</div>
+                      <div><strong>Email:</strong> {clienteData.email}</div>
+                      <div><strong>Telefone:</strong> {clienteData.telefone}</div>
+                      <div><strong>Senha:</strong> <span>••••••••</span></div>
+                    </div>
+                  ) : (
+                    <p className="text-gray-600">Carregando dados do cliente...</p>
                   )}
                 </section>
               )}

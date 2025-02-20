@@ -4,19 +4,18 @@ interface ModalConfirmacaoProps {
   onClose: () => void;
   onConfirm: () => void;
   detalhes: {
-    servicoId: number | null; // ID do serviço selecionado
+    servicoId: number | null;
     funcionario: string;
     data: string;
     horario: string;
     outros: string;
   };
-  servicosList: { id: number; nome: string; preco: number }[]; // Inclui o preço
+  servicosList: { id: number; nome: string; preco: number }[];
 }
 
 const ModalConfirmacao = ({ isOpen, onClose, onConfirm, detalhes, servicosList }: ModalConfirmacaoProps) => {
   if (!isOpen) return null;
 
-  // Encontre o serviço pelo ID
   const servico = servicosList.find(s => s.id === detalhes.servicoId);
 
   return (

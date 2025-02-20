@@ -10,6 +10,15 @@ interface Usuario {
   tipoDeUsuario?: string;
 }
 
+interface AdminData {
+  id: number;
+  nome: string;
+  email: string;
+  telefone: string;
+  cpf: string;
+  senha: string;
+}
+
 const AdminPage = () => {
   const router = useRouter();
   const [selectedTab, setSelectedTab] = useState("usuarios");
@@ -17,9 +26,11 @@ const AdminPage = () => {
   const [filter, setFilter] = useState("todos");
   const [search, setSearch] = useState("");
   const [users, setUsers] = useState<Usuario[]>([]);
+  const [adminData, setAdminData] = useState<AdminData | null>(null); // Corrigido para AdminData
 
   useEffect(() => {
     fetchUsers();
+    fetchAdminData(); // Chame a função para buscar os dados do administrador
   }, [filter]);
 
   const handleLogout = () => {
@@ -56,7 +67,27 @@ const AdminPage = () => {
     }
   };
 
-  const handleDeleteUser = async (userId: number) => {
+  const fetchAdminData = () => {
+    const userDataString = localStorage.getItem("user");
+    if (userDataString) {
+      try {
+        const userData = JSON.parse(userDataString);
+        console.log("Dados do administrador:", userData); // Verificar os dados do administrador
+        setAdminData({
+          id: userData.id,
+          nome: userData.nome,
+          email: userData.email,
+          telefone: userData.telefone || "Não informado", // Adicionando valor padrão
+          cpf: userData.cpf || "Não informado", // Adicionando valor padrão
+          senha: userData.senha || "Não informada", // Adicionando valor padrão
+        });
+      } catch (error) {
+        console.error("Erro ao recuperar dados do administrador:", error);
+      }
+    }
+  };
+
+  const handleDeleteUser  = async (userId: number) => {
     try {
       const response = await fetch(
         `http://localhost:8080/api/usuarios/excluir/${userId}`,
@@ -87,7 +118,9 @@ const AdminPage = () => {
           <ul className="space-y-2">
             <li
               className={`p-2 rounded cursor-pointer ${
-                selectedTab === "usuarios" ? "bg-blue-500 text-white" : "hover:bg-gray-200"
+                selectedTab === "usuarios"
+                  ? "bg-blue-500 text-white"
+                  : "hover:bg-gray-200"
               }`}
               onClick={() => setSelectedTab("usuarios")}
             >
@@ -95,7 +128,9 @@ const AdminPage = () => {
             </li>
             <li
               className={`p-2 rounded cursor-pointer ${
-                selectedTab === "financeiro" ? "bg-blue-500 text-white" : "hover:bg-gray-200"
+                selectedTab === "financeiro"
+                  ? "bg-blue-500 text-white"
+                  : "hover:bg-gray-200"
               }`}
               onClick={() => setSelectedTab("financeiro")}
             >
@@ -103,11 +138,23 @@ const AdminPage = () => {
             </li>
             <li
               className={`p-2 rounded cursor-pointer ${
-                selectedTab === "recepcao" ? "bg-blue-500 text-white" : "hover:bg-gray-200"
+                selectedTab === "recepcao"
+                  ? "bg-blue-500 text-white"
+                  : "hover:bg-gray-200"
               }`}
               onClick={() => router.push("/telas/recepcao")}
             >
               Modo Recepção
+            </li>
+            <li
+              className={`p-2 rounded cursor-pointer ${
+                selectedTab === "perfil"
+                  ? "bg-blue-500 text-white"
+                  : "hover:bg-gray-200"
+              }`}
+              onClick={() => setSelectedTab("perfil")}
+            >
+              Perfil
             </li>
           </ul>
         </div>
@@ -127,7 +174,9 @@ const AdminPage = () => {
         <main className="flex-grow p-8">
           {selectedTab === "usuarios" && (
             <section>
-              <h2 className="text-2xl font-semibold mb-4">Gerenciar Usuários</h2>
+              <h2 className="text-2xl font-semibold mb-4">
+                Gerenciar Usuários
+              </h2>
               <div className="flex gap-4 mb-4">
                 <button
                   className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
@@ -162,16 +211,20 @@ const AdminPage = () => {
                     .map((user) => {
                       console.log("Usuário exibido:", user); // Verificar dados
                       return (
-                        <div key={user.id} className="p-4 border rounded-lg shadow">
+                        <div
+                          key={user.id}
+                          className="p-4 border rounded-lg shadow"
+                        >
                           <p>
                             <strong>Nome:</strong> {user.nome}
                           </p>
                           <p>
-                            <strong>Tipo:</strong> {user.tipoDeUsuario || "Tipo não informado"}
+                            <strong>Tipo:</strong>{" "}
+                            {user.tipoDeUsuario || "Tipo não informado"}
                           </p>
                           <button
                             className="text-red-500 mt-2"
-                            onClick={() => handleDeleteUser(user.id)}
+                            onClick={() => handleDeleteUser (user.id)}
                           >
                             Excluir
                           </button>
@@ -181,6 +234,42 @@ const AdminPage = () => {
                 </div>
               ) : (
                 <p className="text-gray-600">Nenhum usuário encontrado.</p>
+              )}
+            </section>
+          )}
+
+          {selectedTab === "financeiro" && (
+            <section>
+              <h2 className="text-2xl font-semibold mb-4">
+                Controle Financeiro
+              </h2>
+              <p className="text-gray-600">Em desenvolvimento...</p>
+            </section>
+          )}
+
+          {selectedTab === "perfil" && (
+            <section>
+              <h2 className="text-2xl font-semibold mb-4">Perfil</h2>
+              {adminData ? ( // Usando adminData corretamente
+                <div className="space-y-4">
+                  <div>
+                    <strong>Nome:</strong> {adminData.nome}
+                  </div>
+                  <div>
+                    <strong>CPF:</strong> {adminData.cpf || "Não informado"}
+                  </div>
+                  <div>
+                    <strong>Email:</strong> {adminData.email}
+                  </div>
+                  <div>
+                    <strong>Telefone:</strong> {adminData.telefone || "Não informado"}
+                  </div>
+                  <div>
+                    <strong>Senha:</strong> <span>••••••••</span> {/* Exibindo a senha como bolinhas */}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-gray-600">Carregando dados do administrador...</p>
               )}
             </section>
           )}

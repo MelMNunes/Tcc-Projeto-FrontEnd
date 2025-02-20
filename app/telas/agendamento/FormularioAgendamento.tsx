@@ -1,50 +1,70 @@
-// FormularioAgendamento.tsx
 import { Dispatch, SetStateAction, useState, useEffect } from "react";
 import ModalConfirmacao from "./components/ModalConfirmacao";
+
+interface Agendamento {
+  id: number;
+  clienteId: number;
+  funcionarioId: number;
+  servicoId: number;
+  dataHora: string;
+  descricao: string;
+  status: string;
+}
+
+interface Funcionario {
+  id: number;
+  nome: string;
+}
+
+interface Servico {
+  id: number;
+  nome: string;
+  preco: number;
+}
 
 interface FormularioAgendamentoProps {
   passoAtual: number;
   setPassoAtual: Dispatch<SetStateAction<number>>;
-  clienteId: number; // Receba o clienteId como prop
+  clienteId: number;
+  agendamento?: Agendamento;
 }
 
 const FormularioAgendamento: React.FC<FormularioAgendamentoProps> = ({
   passoAtual,
   setPassoAtual,
-  clienteId, // Receba o clienteId como prop
+  clienteId,
+  agendamento,
 }) => {
   const [mostrarModal, setMostrarModal] = useState(false);
-  const [funcionarios, setFuncionarios] = useState<{ id: number; nome: string }[]>([]);
-  const [servicos, setServicos] = useState<{ id: number; nome: string; preco: number }[]>([]);
+  const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
+  const [servicos, setServicos] = useState<Servico[]>([]);
 
   useEffect(() => {
     fetch("http://localhost:8080/api/usuarios/agendamento/funcionarios")
       .then((res) => res.json())
       .then(setFuncionarios)
-      .catch((err) => console.error("Erro ao carregar funcionários", err));
+      .catch((err) => console.error("Erro ao carregar funcionários:", err));
   }, []);
 
   useEffect(() => {
     fetch("http://localhost:8080/api/servicos/listarServicos")
       .then((res) => res.json())
       .then(setServicos)
-      .catch((err) => console.error("Erro ao carregar serviços", err));
+      .catch((err) => console.error("Erro ao carregar serviços:", err));
   }, []);
 
   const [detalhesAgendamento, setDetalhesAgendamento] = useState({
-    servicoId: null as number | null, // Armazena o ID do serviço selecionado
-    funcionario: "",
-    data: "",
-    horario: "",
-    outros: "",
+    servicoId: agendamento?.servicoId ?? null,
+    funcionarioId: agendamento?.funcionarioId ?? null,
+    data: agendamento ? agendamento.dataHora.split("T")[0] : "",
+    horario: agendamento
+      ? new Date(agendamento.dataHora).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : "",
+    descricao: agendamento?.descricao ?? "",
   });
-
-  const handleServicoChange = (servicoId: number) => {
-    setDetalhesAgendamento((prev) => ({
-      ...prev,
-      servicoId, // Atualiza o ID do serviço selecionado
-    }));
-  };
 
   const avancarPasso = () => {
     if (passoAtual === 0 && detalhesAgendamento.servicoId === null) {
@@ -56,28 +76,43 @@ const FormularioAgendamento: React.FC<FormularioAgendamentoProps> = ({
 
   const voltarPasso = () => setPassoAtual((prev) => Math.max(prev - 1, 0));
 
-  const criarAgendamento = async () => {
-    const { data, horario, outros, servicoId } = detalhesAgendamento;
+  const handleServicoChange = (servicoId: number) => {
+    setDetalhesAgendamento((prev) => ({
+      ...prev,
+      servicoId,
+    }));
+  };
 
-    // Combine a data e a hora em um formato ISO 8601
+  const handleSubmit = async () => {
+    const { data, horario, descricao, servicoId, funcionarioId } =
+      detalhesAgendamento;
+
+    if (!data || !horario || !servicoId || !funcionarioId) {
+      alert("Preencha todos os campos antes de continuar.");
+      return;
+    }
+
     const dataHoraCombinada = `${data}T${horario}:00`;
 
-    const funcionarioId = funcionarios.find(func => func.nome === detalhesAgendamento.funcionario)?.id;
-
     const agendamentoData = {
-      clienteId: clienteId, // Use o clienteId recebido como prop
-      funcionarioId: funcionarioId, // Obtenha o ID do funcionário
-      servicoId: servicoId, // Envie o ID do serviço selecionado
+      clienteId,
+      funcionarioId,
+      servicoId,
       dataHora: dataHoraCombinada,
-      descricao: outros,
+      descricao,
       status: "PENDENTE",
     };
 
-    console.log("Dados do agendamento:", agendamentoData); // Verifique os dados que estão sendo enviados
+    console.log("Dados do agendamento:", agendamentoData);
 
     try {
-      const response = await fetch("http://localhost:8080/api/agendamentos/criar", {
-        method: "POST",
+      const url = agendamento
+        ? `http://localhost:8080/api/agendamentos/${agendamento.id}`
+        : "http://localhost:8080/api/agendamentos/criar";
+      const metodo = agendamento ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method: metodo,
         headers: {
           "Content-Type": "application/json",
         },
@@ -85,15 +120,16 @@ const FormularioAgendamento: React.FC<FormularioAgendamentoProps> = ({
       });
 
       if (!response.ok) {
-        const errorData = await response.json(); // Tente obter a resposta de erro
-        console.error("Erro ao criar agendamento:", errorData);
-        throw new Error("Erro ao criar agendamento");
+        const errorData = await response.json();
+        console.error("Erro ao salvar agendamento:", errorData);
+        throw new Error("Erro ao salvar agendamento");
       }
 
-      const data = await response.json();
-      console.log("Agendamento criado com sucesso:", data);
+      const responseData = await response.json();
+      console.log("Agendamento salvo com sucesso:", responseData);
+      setMostrarModal(true);
     } catch (error) {
-      console.error("Erro ao criar agendamento:", error);
+      console.error("Erro ao salvar agendamento:", error);
     }
   };
 
@@ -108,10 +144,10 @@ const FormularioAgendamento: React.FC<FormularioAgendamentoProps> = ({
                 <label key={servico.id} className="flex items-center space-x-2">
                   <input
                     type="radio"
-                    name="servico" // Use radio buttons para selecionar apenas um serviço
+                    name="servico"
                     value={servico.id}
-                    checked={detalhesAgendamento.servicoId === servico.id} // Verifica se o ID está selecionado
-                    onChange={() => handleServicoChange(servico.id)} // Passa o ID para a função
+                    checked={detalhesAgendamento.servicoId === servico.id}
+                    onChange={() => handleServicoChange(servico.id)}
                     className="w-5 h-5"
                   />
                   <span>
@@ -130,24 +166,21 @@ const FormularioAgendamento: React.FC<FormularioAgendamentoProps> = ({
         <div>
           <h2 className="text-xl font-semibold">Escolha o Funcionário</h2>
           <select
-            className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full p-2 border rounded-lg"
+            value={detalhesAgendamento.funcionarioId ?? ""}
             onChange={(e) =>
               setDetalhesAgendamento((prev) => ({
                 ...prev,
-                funcionario: e.target.value,
+                funcionarioId: Number(e.target.value),
               }))
             }
           >
             <option value="">Selecione um funcionário</option>
-            {funcionarios.length > 0 ? (
-              funcionarios.map((func) => (
-                <option key={func.id} value={func.nome}>
-                  {func.nome}
-                </option>
-              ))
-            ) : (
-              <option disabled>Carregando...</option>
-            )}
+            {funcionarios.map((func) => (
+              <option key={func.id} value={func.id}>
+                {func.nome}
+              </option>
+            ))}
           </select>
         </div>
       )}
@@ -157,95 +190,98 @@ const FormularioAgendamento: React.FC<FormularioAgendamentoProps> = ({
           <h2 className="text-xl font-semibold">Escolha a Data</h2>
           <input
             type="date"
-            className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full p-2 border rounded-lg"
+            value={detalhesAgendamento.data}
             onChange={(e) =>
               setDetalhesAgendamento((prev) => ({
                 ...prev,
-                data: e.target.value,              }))
-              }
-            />
-          </div>
-        )}
-  
-        {passoAtual === 3 && (
-          <div>
-            <h2 className="text-xl font-semibold">Escolha o Horário</h2>
-            <input
-              type="time"
-              className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              onChange={(e) =>
-                setDetalhesAgendamento((prev) => ({
-                  ...prev,
-                  horario: e.target.value,
-                }))
-              }
-            />
-          </div>
-        )}
-  
-        {passoAtual === 4 && (
-          <div>
-            <h2 className="text-xl font-semibold">Detalhes do Agendamento</h2>
-            <textarea
-              className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Detalhes adicionais..."
-              onChange={(e) =>
-                setDetalhesAgendamento((prev) => ({
-                  ...prev,
-                  outros: e.target.value,
-                }))
-              }
-            />
-          </div>
-        )}
-  
-        <div className="flex justify-between border-t pt-4">
-          {passoAtual > 0 && (
-            <button
-              className="px-4 py-2 bg-gray-400 text-white rounded-lg"
-              onClick={voltarPasso}
-            >
-              Voltar
-            </button>
-          )}
-  
-          {passoAtual === 4 ? (
-            <button
-              className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg"
-              onClick={() => setMostrarModal(true)}
-            >
-              Ver Detalhes da Consulta
-            </button>
-          ) : (
-            <button
-              className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg"
-              onClick={avancarPasso}
-            >
-              Próximo
-            </button>
-          )}
-        </div>
-  
-        {mostrarModal && (
-          <ModalConfirmacao
-            isOpen={mostrarModal}
-            onClose={() => setMostrarModal(false)}
-            onConfirm={() => {
-              setMostrarModal(false);
-              criarAgendamento(); // Chama a função para criar o agendamento
-            }}
-            detalhes={{
-              servicoId: detalhesAgendamento.servicoId, // Passa o ID do serviço
-              funcionario: detalhesAgendamento.funcionario,
-              data: detalhesAgendamento.data,
-              horario: detalhesAgendamento.horario,
-              outros: detalhesAgendamento.outros,
-            }}
-            servicosList={servicos} // Passa a lista de serviços para o modal
+                data: e.target.value,
+              }))
+            }
           />
+        </div>
+      )}
+
+      {passoAtual === 3 && (
+        <div>
+          <h2 className="text-xl font-semibold">Escolha o Horário</h2>
+          <input
+            type="time"
+            className="w-full p-2 border rounded-lg"
+            value={detalhesAgendamento.horario}
+            onChange={(e) =>
+              setDetalhesAgendamento((prev) => ({
+                ...prev,
+                horario: e.target.value,
+              }))
+            }
+          />
+        </div>
+      )}
+
+      {passoAtual === 4 && (
+        <div>
+          <h2 className="text-xl font-semibold">Detalhes do Agendamento</h2>
+          <textarea
+            className="w-full p-2 border rounded-lg"
+            placeholder="Detalhes adicionais..."
+            value={detalhesAgendamento.descricao}
+            onChange={(e) =>
+              setDetalhesAgendamento((prev) => ({
+                ...prev,
+                descricao: e.target.value,
+              }))
+            }
+          />
+        </div>
+      )}
+
+      <div className="flex justify-between border-t pt-4">
+        {passoAtual > 0 && (
+          <button
+            className="px-4 py-2 bg-gray-400 text-white rounded-lg"
+            onClick={voltarPasso}
+          >
+            Voltar
+          </button>
+        )}
+        {passoAtual === 4 ? (
+          <button
+            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg"
+            onClick={handleSubmit}
+          >
+            Confirmar Agendamento
+          </button>
+        ) : (
+          <button
+            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg"
+            onClick={avancarPasso}
+          >
+            Próximo
+          </button>
         )}
       </div>
-    );
-  };
-  
-  export default FormularioAgendamento;
+
+      {mostrarModal && (
+        <ModalConfirmacao
+          isOpen={mostrarModal}
+          onClose={() => setMostrarModal(false)}
+          onConfirm={handleSubmit}
+          detalhes={{
+            servicoId: detalhesAgendamento.servicoId,
+            funcionario:
+              funcionarios.find(
+                (func) => func.id === detalhesAgendamento.funcionarioId
+              )?.nome || "",
+            data: detalhesAgendamento.data,
+            horario: detalhesAgendamento.horario,
+            outros: detalhesAgendamento.descricao,
+          }}
+          servicosList={servicos}
+        />
+      )}
+    </div>
+  );
+};
+
+export default FormularioAgendamento;
