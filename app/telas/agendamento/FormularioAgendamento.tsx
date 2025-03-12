@@ -38,6 +38,7 @@ const FormularioAgendamento: React.FC<FormularioAgendamentoProps> = ({
   const [mostrarModal, setMostrarModal] = useState(false);
   const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
   const [servicos, setServicos] = useState<Servico[]>([]);
+  const [agendamentoConfirmado, setAgendamentoConfirmado] = useState(false);
 
   useEffect(() => {
     fetch("http://localhost:8080/api/usuarios/agendamento/funcionarios")
@@ -116,21 +117,24 @@ const FormularioAgendamento: React.FC<FormularioAgendamentoProps> = ({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(agendamentoData),
+        body: JSON.stringify(agendamentoData), // Corrigido para usar agendamentoData
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Erro ao salvar agendamento:", errorData);
-        throw new Error("Erro ao salvar agendamento");
-      }
 
       const responseData = await response.json();
       console.log("Agendamento salvo com sucesso:", responseData);
-      setMostrarModal(true);
+      setMostrarModal(true); // Abre o modal de confirmação
     } catch (error) {
       console.error("Erro ao salvar agendamento:", error);
     }
+  };
+
+  if (agendamentoConfirmado) {
+  }
+
+  const handleConfirmarAgendamento = async () => {
+    await handleSubmit(); // Chama a função de submissão
+    setMostrarModal(false); // Fecha o modal após a confirmação
+    setAgendamentoConfirmado(true); // Marca o agendamento como confirmado
   };
 
   return (
@@ -248,7 +252,7 @@ const FormularioAgendamento: React.FC<FormularioAgendamentoProps> = ({
         {passoAtual === 4 ? (
           <button
             className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg"
-            onClick={handleSubmit}
+            onClick={() => setMostrarModal(true)} // Abre o modal ao confirmar
           >
             Confirmar Agendamento
           </button>
@@ -266,7 +270,7 @@ const FormularioAgendamento: React.FC<FormularioAgendamentoProps> = ({
         <ModalConfirmacao
           isOpen={mostrarModal}
           onClose={() => setMostrarModal(false)}
-          onConfirm={handleSubmit}
+          onConfirm={handleConfirmarAgendamento} // Chama a função de confirmação
           detalhes={{
             servicoId: detalhesAgendamento.servicoId,
             funcionario:
@@ -279,6 +283,13 @@ const FormularioAgendamento: React.FC<FormularioAgendamentoProps> = ({
           }}
           servicosList={servicos}
         />
+      )}
+
+      {/* Mensagem de confirmação do agendamento */}
+      {agendamentoConfirmado && (
+        <div className="mt-4 p-4 bg-green-100 text-green-800 border border-green-300 rounded">
+          Agendamento confirmado com sucesso!
+        </div>
       )}
     </div>
   );

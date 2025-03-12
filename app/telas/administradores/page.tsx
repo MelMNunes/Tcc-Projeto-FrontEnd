@@ -23,14 +23,17 @@ const AdminPage = () => {
   const router = useRouter();
   const [selectedTab, setSelectedTab] = useState("usuarios");
   const [modalOpen, setModalOpen] = useState(false);
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false); // Novo estado para o modal de senha
   const [filter, setFilter] = useState("todos");
   const [search, setSearch] = useState("");
   const [users, setUsers] = useState<Usuario[]>([]);
-  const [adminData, setAdminData] = useState<AdminData | null>(null); // Corrigido para AdminData
+  const [adminData, setAdminData] = useState<AdminData | null>(null);
+  const [adminPassword, setAdminPassword] = useState(""); // Estado para armazenar a senha digitada
+  const [passwordError, setPasswordError] = useState(""); // Estado para armazenar erros de senha
 
   useEffect(() => {
     fetchUsers();
-    fetchAdminData(); // Chame a função para buscar os dados do administrador
+    fetchAdminData();
   }, [filter]);
 
   const handleLogout = () => {
@@ -59,8 +62,7 @@ const AdminPage = () => {
       }
 
       const data: Usuario[] = await response.json();
-      console.log("Usuários recebidos:", data); // Verificar os dados no console
-
+      console.log("Usuários recebidos:", data);
       setUsers(data);
     } catch (error) {
       console.error("Erro ao buscar usuários:", error);
@@ -72,14 +74,14 @@ const AdminPage = () => {
     if (userDataString) {
       try {
         const userData = JSON.parse(userDataString);
-        console.log("Dados do administrador:", userData); // Verificar os dados do administrador
+        console.log("Dados do administrador:", userData);
         setAdminData({
           id: userData.id,
           nome: userData.nome,
           email: userData.email,
-          telefone: userData.telefone || "Não informado", // Adicionando valor padrão
-          cpf: userData.cpf || "Não informado", // Adicionando valor padrão
-          senha: userData.senha || "Não informada", // Adicionando valor padrão
+          telefone: userData.telefone || "Não informado",
+          cpf: userData.cpf || "Não informado",
+          senha: userData.senha || "Não informada",
         });
       } catch (error) {
         console.error("Erro ao recuperar dados do administrador:", error);
@@ -107,6 +109,19 @@ const AdminPage = () => {
       fetchUsers();
     } catch (error) {
       console.error("Erro ao excluir usuário:", error);
+    }
+  };
+
+  const handleOpenReception = () => {
+    setPasswordModalOpen(true); // Abre o modal de senha
+  };
+
+  const handlePasswordSubmit = () => {
+    if (adminData && adminPassword === adminData.senha) {
+      setPasswordModalOpen(false);
+      router.push("/telas/recepcao"); // Redireciona para a tela de recepção
+    } else {
+      setPasswordError("Senha incorreta. Tente novamente."); // Exibe erro se a senha estiver incorreta
     }
   };
 
@@ -142,7 +157,7 @@ const AdminPage = () => {
                   ? "bg-blue-500 text-white"
                   : "hover:bg-gray-200"
               }`}
-              onClick={() => router.push("/telas/recepcao")}
+              onClick={handleOpenReception} // Abre o modal de senha ao clicar
             >
               Modo Recepção
             </li>
@@ -209,7 +224,7 @@ const AdminPage = () => {
                       user.nome.toLowerCase().includes(search.toLowerCase())
                     )
                     .map((user) => {
-                      console.log("Usuário exibido:", user); // Verificar dados
+                      console.log("Usuário exibido:", user);
                       return (
                         <div
                           key={user.id}
@@ -250,7 +265,7 @@ const AdminPage = () => {
           {selectedTab === "perfil" && (
             <section>
               <h2 className="text-2xl font-semibold mb-4">Perfil</h2>
-              {adminData ? ( // Usando adminData corretamente
+              {adminData ? (
                 <div className="space-y-4">
                   <div>
                     <strong>Nome:</strong> {adminData.nome}
@@ -265,7 +280,7 @@ const AdminPage = () => {
                     <strong>Telefone:</strong> {adminData.telefone || "Não informado"}
                   </div>
                   <div>
-                    <strong>Senha:</strong> <span>••••••••</span> {/* Exibindo a senha como bolinhas */}
+                    <strong>Senha:</strong> <span>••••••••</span>
                   </div>
                 </div>
               ) : (
@@ -282,6 +297,37 @@ const AdminPage = () => {
           onClose={() => setModalOpen(false)}
           onSave={() => fetchUsers()}
         />
+      )}
+
+      {/* Modal de Senha */}
+      {passwordModalOpen && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded shadow-md">
+            <h2 className="text-lg font-semibold mb-4">Digite a Senha do Administrador</h2>
+            <input
+              type="password"
+              placeholder="Senha"
+              value={adminPassword}
+              onChange={(e) => setAdminPassword(e.target.value)}
+              className="border px-4 py-2 rounded w-full mb-2"
+            />
+            {passwordError && <p className="text-red-500">{passwordError}</p>}
+            <div className="flex justify-end mt-4">
+              <button
+                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                onClick={handlePasswordSubmit}
+              >
+                Confirmar
+              </button>
+              <button
+                className="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400 ml-2"
+                onClick={() => setPasswordModalOpen(false)}
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

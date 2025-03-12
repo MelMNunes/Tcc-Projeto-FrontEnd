@@ -2,8 +2,8 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { login, register } from "@/app/services/authService";
-import MaskedInput from "@/app/components/InputMask"; 
+import { login } from "@/app/services/authService";
+import MaskedInput from "@/app/components/InputMask";
 
 interface InputProps {
   type: string;
@@ -58,30 +58,32 @@ const LoginCadastro = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-  
+
     try {
       const response = await login({ login: email, senha: password });
 
       console.log("Resposta do login:", response); // Verificar o que está sendo retornado
 
       if (response.token) {
-        
         localStorage.setItem("token", response.token);
         localStorage.setItem("tipoDeUsuario", response.tipoDeUsuario);
         localStorage.setItem("nome", response.nome);
         localStorage.setItem("id", response.id);
-        
+
         // Salvar todos os dados de usuário em 'user' no localStorage
-        localStorage.setItem("user", JSON.stringify({
-          nome: response.nome,
-          email: email,  // ou pegar diretamente do response se já estiver no retorno
-          tipoDeUsuario: response.tipoDeUsuario
-        }));
+        localStorage.setItem(
+          "user",
+          JSON.stringify({
+            nome: response.nome,
+            email: email, // ou pegar diretamente do response se já estiver no retorno
+            tipoDeUsuario: response.tipoDeUsuario,
+          })
+        );
 
         console.log("nome salvo no storage:", response.nome);
-  
+
         alert("Login realizado com sucesso!");
-  
+
         switch (response.tipoDeUsuario) {
           case "ADMINISTRADOR":
             router.push("/telas/administradores");
@@ -93,7 +95,10 @@ const LoginCadastro = () => {
             router.push("/telas/clientes");
             break;
           default:
-            console.error("Tipo de usuário não reconhecido:", response.tipoDeUsuario);
+            console.error(
+              "Tipo de usuário não reconhecido:",
+              response.tipoDeUsuario
+            );
             router.push("/");
         }
       } else {
@@ -106,7 +111,6 @@ const LoginCadastro = () => {
       );
     }
   };
-  
 
   const handleCadastro = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,38 +121,149 @@ const LoginCadastro = () => {
       return;
     }
 
+    console.log("Enviando dados para cadastro:", {
+      email,
+      nome,
+      cpf,
+      telefone,
+      senha,
+    });
+
     try {
-      await register({
-        email,
-        nome,
-        cpf,
-        telefone,
-        senha,
-        tipoDeUsuario: "CLIENTE",
-      });
-      alert("Cadastro realizado com sucesso!");
+      const response = await fetch(
+        "http://localhost:8080/api/usuarios/cadastrar-cliente",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`, // Caso precise de autenticação
+          },
+          body: JSON.stringify({
+            nome,
+            email,
+            cpf,
+            telefone,
+            senha,
+          }),
+        }
+      );
+
+      // Verifica se a resposta tem conteúdo JSON válido
+      const contentType = response.headers.get("Content-Type");
+      let data = null;
+
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        data = await response.text(); // Caso o servidor retorne texto puro
+        console.warn("Resposta do servidor não é JSON:", data);
+      }
+
+      console.log("Resposta do servidor:", data);
+
+      if (response.ok) {
+        alert("Cadastro realizado com sucesso!");
+      } else {
+        setError(data?.message || "Erro ao cadastrar usuário.");
+      }
     } catch (err) {
+      console.error("Erro ao cadastrar usuário:", err);
       setError(
         err instanceof Error
           ? err.message
-          : "Erro desconhecido ao realizar cadastro."
+          : "Erro desconhecido ao cadastrar usuário."
       );
-      alert("Erro desconhecido ao realizar cadastro.");
     }
   };
+
+  // const handleCadastro = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   setError("");
+  
+  //   if (senha !== confirmarSenha) {
+  //     setError("As senhas não são iguais!");
+  //     return;
+  //   }
+  
+  //   console.log("Enviando dados para cadastro:", {
+  //     email,
+  //     nome,
+  //     cpf,
+  //     telefone,
+  //     senha,
+  //   });
+  
+  //   // Substitua "http://localhost:8080" pela URL do Ngrok do backend
+  //   const backendUrl = "https://8bc5-186-251-165-84.ngrok-free.app/"; // Seu link do Ngrok
+  
+  //   try {
+  //     const response = await fetch(
+  //       `${backendUrl}/api/usuarios/cadastrar-cliente`,
+  //       {
+  //         method: "POST",
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //           Authorization: `Bearer ${localStorage.getItem("token")}`, // Caso precise de autenticação
+  //         },
+  //         body: JSON.stringify({
+  //           nome,
+  //           email,
+  //           cpf,
+  //           telefone,
+  //           senha,
+  //         }),
+  //       }
+  //     );
+  
+  //     // Verifica se a resposta tem conteúdo JSON válido
+  //     const contentType = response.headers.get("Content-Type");
+  //     let data = null;
+  
+  //     if (contentType && contentType.includes("application/json")) {
+  //       data = await response.json();
+  //     } else {
+  //       data = await response.text(); // Caso o servidor retorne texto puro
+  //       console.warn("Resposta do servidor não é JSON:", data);
+  //     }
+  
+  //     console.log("Resposta do servidor:", data);
+  
+  //     if (response.ok) {
+  //       alert("Cadastro realizado com sucesso!");
+  //     } else {
+  //       setError(data?.message || "Erro ao cadastrar usuário.");
+  //     }
+  //   } catch (err) {
+  //     console.error("Erro ao cadastrar usuário:", err);
+  //     setError(
+  //       err instanceof Error
+  //         ? err.message
+  //         : "Erro desconhecido ao cadastrar usuário."
+  //     );
+  //   }
+  // };
+  
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-100 to-blue-300">
       <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md">
         <div className="flex justify-center mb-6">
           <button
-            className={`px-4 py-2 font-bold ${activeTab === "login" ? "border-b-2 border-blue-500 text-blue-500" : "text-gray-500"}`}
+            className={`px-4 py-2 font-bold ${
+              activeTab === "login"
+                ? "border-b-2 border-blue-500 text-blue-500"
+                : "text-gray-500"
+            }`}
             onClick={() => setActiveTab("login")}
           >
             Login
           </button>
           <button
-            className={`px-4 py-2 font-bold ${activeTab === "cadastro" ? "border-b-2 border-blue-500 text-blue-500" : "text-gray-500"}`}
+            className={`px-4 py-2 font-bold ${
+              activeTab === "cadastro"
+                ? "border-b-2 border-blue-500 text-blue-500"
+                : "text-gray-500"
+            }`}
             onClick={() => setActiveTab("cadastro")}
           >
             Cadastro
