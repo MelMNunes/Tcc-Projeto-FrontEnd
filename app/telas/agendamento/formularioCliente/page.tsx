@@ -2,8 +2,8 @@
 "use client";
 
 import React, { useState } from "react";
-import BarraProgresso from "./components/BarraProgresso";
-import FormularioAgendamento from "./FormularioAgendamento";
+import BarraProgresso from "../components/BarraProgresso";
+import FormularioCliente from "./FormularioCliente";
 
 interface AgendamentoPageProps {
   clienteId: number; // Adicione esta linha para receber o clienteId
@@ -18,7 +18,7 @@ const AgendamentoPage: React.FC<AgendamentoPageProps> = ({ clienteId }) => {
       <BarraProgresso passoAtual={passoAtual} totalPassos={4} />
       
       {/* Conteúdo dos passos */}
-      <FormularioAgendamento 
+      <FormularioCliente 
         passoAtual={passoAtual} 
         setPassoAtual={setPassoAtual} 
         clienteId={clienteId} // Passa o clienteId para o FormularioAgendamento

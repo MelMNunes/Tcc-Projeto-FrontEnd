@@ -1,5 +1,5 @@
 import { Dispatch, SetStateAction, useState, useEffect } from "react";
-import ModalConfirmacao from "./components/ModalConfirmacao";
+import ModalConfirmacao from "../components/ModalConfirmacao";
 
 interface Agendamento {
   id: number;
@@ -29,7 +29,7 @@ interface FormularioAgendamentoProps {
   agendamento?: Agendamento;
 }
 
-const FormularioAgendamento: React.FC<FormularioAgendamentoProps> = ({
+const FormularioCliente: React.FC<FormularioAgendamentoProps> = ({
   passoAtual,
   setPassoAtual,
   clienteId,
@@ -38,21 +38,7 @@ const FormularioAgendamento: React.FC<FormularioAgendamentoProps> = ({
   const [mostrarModal, setMostrarModal] = useState(false);
   const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
   const [servicos, setServicos] = useState<Servico[]>([]);
-  const [agendamentoConfirmado, setAgendamentoConfirmado] = useState(false);
-
-  useEffect(() => {
-    fetch("http://localhost:8080/api/usuarios/agendamento/funcionarios")
-      .then((res) => res.json())
-      .then(setFuncionarios)
-      .catch((err) => console.error("Erro ao carregar funcionários:", err));
-  }, []);
-
-  useEffect(() => {
-    fetch("http://localhost:8080/api/servicos/listarServicos")
-      .then((res) => res.json())
-      .then(setServicos)
-      .catch((err) => console.error("Erro ao carregar serviços:", err));
-  }, []);
+  // const [agendamentoConfirmado, setAgendamentoConfirmado] = useState(false);
 
   const [detalhesAgendamento, setDetalhesAgendamento] = useState({
     servicoId: agendamento?.servicoId ?? null,
@@ -67,21 +53,48 @@ const FormularioAgendamento: React.FC<FormularioAgendamentoProps> = ({
     descricao: agendamento?.descricao ?? "",
   });
 
+  useEffect(() => {
+    const fetchDados = async () => {
+      try {
+        const [funcionariosRes, servicosRes] = await Promise.all([
+          fetch("http://localhost:8080/api/usuarios/agendamento/funcionarios"),
+          fetch("http://localhost:8080/api/servicos/listarServicos"),
+        ]);
+        setFuncionarios(await funcionariosRes.json());
+        setServicos(await servicosRes.json());
+      } catch (err) {
+        console.error("Erro ao carregar dados:", err);
+      }
+    };
+    fetchDados();
+  }, []);
+
   const avancarPasso = () => {
-    if (passoAtual === 0 && detalhesAgendamento.servicoId === null) {
+    if (passoAtual === 0 && !detalhesAgendamento.servicoId) {
       alert("Por favor, selecione um serviço antes de continuar.");
       return;
     }
+    if (passoAtual === 1 && !detalhesAgendamento.funcionarioId) {
+      alert("Por favor, selecione um funcionário antes de continuar.");
+      return;
+    }
+    if (passoAtual === 2 && !detalhesAgendamento.data) {
+      alert("Por favor, selecione uma data antes de continuar.");
+      return;
+    }
+    if (passoAtual === 3 && !detalhesAgendamento.horario) {
+      alert("Por favor, selecione um horário antes de continuar.");
+      return;
+    }
+  
     setPassoAtual((prev) => Math.min(prev + 1, 4));
   };
+  
 
   const voltarPasso = () => setPassoAtual((prev) => Math.max(prev - 1, 0));
 
   const handleServicoChange = (servicoId: number) => {
-    setDetalhesAgendamento((prev) => ({
-      ...prev,
-      servicoId,
-    }));
+    setDetalhesAgendamento((prev) => ({ ...prev, servicoId }));
   };
 
   const handleSubmit = async () => {
@@ -104,8 +117,6 @@ const FormularioAgendamento: React.FC<FormularioAgendamentoProps> = ({
       status: "PENDENTE",
     };
 
-    console.log("Dados do agendamento:", agendamentoData);
-
     try {
       const url = agendamento
         ? `http://localhost:8080/api/agendamentos/${agendamento.id}`
@@ -114,27 +125,23 @@ const FormularioAgendamento: React.FC<FormularioAgendamentoProps> = ({
 
       const response = await fetch(url, {
         method: metodo,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(agendamentoData), // Corrigido para usar agendamentoData
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(agendamentoData),
       });
 
-      const responseData = await response.json();
-      console.log("Agendamento salvo com sucesso:", responseData);
-      setMostrarModal(true); // Abre o modal de confirmação
+      if (!response.ok) throw new Error("Erro ao salvar agendamento");
+
+      console.log("Agendamento salvo com sucesso");
+      setMostrarModal(true);
     } catch (error) {
-      console.error("Erro ao salvar agendamento:", error);
+      console.error(error);
     }
   };
 
-  if (agendamentoConfirmado) {
-  }
-
   const handleConfirmarAgendamento = async () => {
-    await handleSubmit(); // Chama a função de submissão
-    setMostrarModal(false); // Fecha o modal após a confirmação
-    setAgendamentoConfirmado(true); // Marca o agendamento como confirmado
+    await handleSubmit();
+    setMostrarModal(false);
+    // setAgendamentoConfirmado(true);
   };
 
   return (
@@ -154,9 +161,7 @@ const FormularioAgendamento: React.FC<FormularioAgendamentoProps> = ({
                     onChange={() => handleServicoChange(servico.id)}
                     className="w-5 h-5"
                   />
-                  <span>
-                    {servico.nome} - R$ {servico.preco.toFixed(2)}
-                  </span>
+                  <span>{servico.nome} - R$ {servico.preco.toFixed(2)}</span>
                 </label>
               ))
             ) : (
@@ -197,10 +202,7 @@ const FormularioAgendamento: React.FC<FormularioAgendamentoProps> = ({
             className="w-full p-2 border rounded-lg"
             value={detalhesAgendamento.data}
             onChange={(e) =>
-              setDetalhesAgendamento((prev) => ({
-                ...prev,
-                data: e.target.value,
-              }))
+              setDetalhesAgendamento((prev) => ({ ...prev, data: e.target.value }))
             }
           />
         </div>
@@ -214,27 +216,7 @@ const FormularioAgendamento: React.FC<FormularioAgendamentoProps> = ({
             className="w-full p-2 border rounded-lg"
             value={detalhesAgendamento.horario}
             onChange={(e) =>
-              setDetalhesAgendamento((prev) => ({
-                ...prev,
-                horario: e.target.value,
-              }))
-            }
-          />
-        </div>
-      )}
-
-      {passoAtual === 4 && (
-        <div>
-          <h2 className="text-xl font-semibold">Detalhes do Agendamento</h2>
-          <textarea
-            className="w-full p-2 border rounded-lg"
-            placeholder="Detalhes adicionais..."
-            value={detalhesAgendamento.descricao}
-            onChange={(e) =>
-              setDetalhesAgendamento((prev) => ({
-                ...prev,
-                descricao: e.target.value,
-              }))
+              setDetalhesAgendamento((prev) => ({ ...prev, horario: e.target.value }))
             }
           />
         </div>
@@ -242,57 +224,23 @@ const FormularioAgendamento: React.FC<FormularioAgendamentoProps> = ({
 
       <div className="flex justify-between border-t pt-4">
         {passoAtual > 0 && (
-          <button
-            className="px-4 py-2 bg-gray-400 text-white rounded-lg"
-            onClick={voltarPasso}
-          >
+          <button className="px-4 py-2 bg-gray-400 text-white rounded-lg" onClick={voltarPasso}>
             Voltar
           </button>
         )}
-        {passoAtual === 4 ? (
-          <button
-            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg"
-            onClick={() => setMostrarModal(true)} // Abre o modal ao confirmar
-          >
-            Confirmar Agendamento
-          </button>
-        ) : (
-          <button
-            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg"
-            onClick={avancarPasso}
-          >
-            Próximo
-          </button>
-        )}
+        <button
+          className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg"
+          onClick={passoAtual === 4 ? () => setMostrarModal(true) : avancarPasso}
+        >
+          {passoAtual === 4 ? "Confirmar Agendamento" : "Próximo"}
+        </button>
       </div>
 
       {mostrarModal && (
-        <ModalConfirmacao
-          isOpen={mostrarModal}
-          onClose={() => setMostrarModal(false)}
-          onConfirm={handleConfirmarAgendamento} // Chama a função de confirmação
-          detalhes={{
-            servicoId: detalhesAgendamento.servicoId,
-            funcionario:
-              funcionarios.find(
-                (func) => func.id === detalhesAgendamento.funcionarioId
-              )?.nome || "",
-            data: detalhesAgendamento.data,
-            horario: detalhesAgendamento.horario,
-            outros: detalhesAgendamento.descricao,
-          }}
-          servicosList={servicos}
-        />
-      )}
-
-      {/* Mensagem de confirmação do agendamento */}
-      {agendamentoConfirmado && (
-        <div className="mt-4 p-4 bg-green-100 text-green-800 border border-green-300 rounded">
-          Agendamento confirmado com sucesso!
-        </div>
+        <ModalConfirmacao isOpen={mostrarModal} onClose={() => setMostrarModal(false)} onConfirm={handleConfirmarAgendamento} />
       )}
     </div>
   );
 };
 
-export default FormularioAgendamento;
+export default FormularioCliente;

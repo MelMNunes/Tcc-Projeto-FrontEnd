@@ -5,6 +5,7 @@ interface ModalConfirmacaoProps {
   detalhes: {
     servicoId: number | null;
     funcionario: string;
+    cliente: string;
     data: string;
     horario: string;
     outros: string;

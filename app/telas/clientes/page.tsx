@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import AgendamentoPage from "../agendamento/page";
+import FormularioCliente from "../agendamento/formularioCliente/FormularioCliente"; // Importa o formulário de cliente
 import { getUsuarioById } from "@/app/services/api";
 
 const ClientesPage = () => {
@@ -68,25 +68,6 @@ const ClientesPage = () => {
     }
   };
 
-  const handleDeleteAgendamento = async (id: number) => {
-    try {
-      const response = await fetch(`http://localhost:8080/api/agendamentos/${id}`, {
-        method: "DELETE",
-      });
-  
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Erro ao excluir agendamento:", errorData);
-        throw new Error("Erro ao excluir agendamento");
-      }
-  
-      // Atualiza a lista de agendamentos
-      setAgendamentos((prev) => prev.filter((agendamento) => agendamento.id !== id));
-    } catch (error) {
-      console.error("Erro ao excluir agendamento:", error);
-    }
-  };
-
   return (
     <div className="flex min-h-screen text-black bg-gray-100">
       <nav className="w-64 bg-white p-4 shadow-md h-screen fixed top-0 left-0 flex flex-col justify-between">
@@ -146,7 +127,11 @@ const ClientesPage = () => {
                 <section>
                   <h2 className="text-2xl font-semibold mb-4">Agendamento</h2>
                   {clienteData ? (
-                    <AgendamentoPage clienteId={clienteData.id} />
+                    <FormularioCliente 
+                      passoAtual={0} 
+                      setPassoAtual={() => {}} 
+                      clienteId={clienteData.id} // Passa o ID do cliente para o FormularioCliente
+                    />
                   ) : (
                     <p className="text-gray-600">Carregando dados do cliente...</p>
                   )}
@@ -164,10 +149,6 @@ const ClientesPage = () => {
                           <p><strong>Data:</strong> {new Date(consulta.dataHora).toLocaleDateString()}</p>
                           <p><strong>Horário:</strong> {new Date(consulta.dataHora).toLocaleTimeString()}</p>
                           <p><strong>Serviço:</strong> {consulta.servicoNome || "Não informado"}</p>
-                          <div className="flex justify-end mt-2">
-                            <button className="bg-yellow-500 text-white rounded px-2 py-1 mr-2" onClick={() => {/* lógica para editar */}}>Editar</button>
-                            <button className="bg-red-500 text-white rounded px-2 py-1" onClick={() => handleDeleteAgendamento(consulta.id)}>Excluir</button>
-                          </div>
                         </div>
                       ))}
                     </div>

@@ -1,11 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import AgendamentoPage from "../agendamento/page";
-import {
-  getUsuarioById,
-  getAgendamentosByFuncionarioId,
-} from "@/app/services/api";
+import FormularioAgendamentoFuncionario from "../agendamento/formularioFuncionario/FormularioFuncionario";
+import { getUsuarioById, getAgendamentosByFuncionarioId } from "@/app/services/api";
 
 const FuncionariosPage = () => {
   interface Consulta {
@@ -28,10 +25,10 @@ const FuncionariosPage = () => {
 
   const [nome, setNome] = useState<string>("");
   const [selectedTab, setSelectedTab] = useState("agendamento");
-  const [funcionarioData, setFuncionarioData] =
-    useState<FuncionarioData | null>(null);
+  const [funcionarioData, setFuncionarioData] = useState<FuncionarioData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [agendamentos, setAgendamentos] = useState<Consulta[]>([]);
+  const [passoAtual, setPassoAtual] = useState(0); // Definindo o estado passoAtual
 
   useEffect(() => {
     const userDataString = localStorage.getItem("user");
@@ -78,41 +75,25 @@ const FuncionariosPage = () => {
           <h1 className="text-lg font-semibold mb-6 text-center">Painel</h1>
           <ul className="space-y-2">
             <li
-              className={`p-2 rounded cursor-pointer ${
-                selectedTab === "agendamento"
-                  ? "bg-blue-500 text-white"
-                  : "hover:bg-gray-200"
-              }`}
+              className={`p-2 rounded cursor-pointer ${selectedTab === "agendamento" ? "bg-blue-500 text-white" : "hover:bg-gray-200"}`}
               onClick={() => setSelectedTab("agendamento")}
             >
               Agendamento
             </li>
             <li
-              className={`p-2 rounded cursor-pointer ${
-                selectedTab === "consultas"
-                  ? "bg-blue-500 text-white"
-                  : "hover:bg-gray-200"
-              }`}
+              className={`p-2 rounded cursor-pointer ${selectedTab === "consultas" ? "bg-blue-500 text-white" : "hover:bg-gray-200"}`}
               onClick={() => setSelectedTab("consultas")}
             >
               Próximas Consultas
             </li>
             <li
-              className={`p-2 rounded cursor-pointer ${
-                selectedTab === "historico"
-                  ? "bg-blue-500 text-white"
-                  : "hover:bg-gray-200"
-              }`}
+              className={`p-2 rounded cursor-pointer ${selectedTab === "historico" ? "bg-blue-500 text-white" : "hover:bg-gray-200"}`}
               onClick={() => setSelectedTab("historico")}
             >
               Histórico
             </li>
             <li
-              className={`p-2 rounded cursor-pointer ${
-                selectedTab === "perfil"
-                  ? "bg-blue-500 text-white"
-                  : "hover:bg-gray-200"
-              }`}
+              className={`p-2 rounded cursor-pointer ${selectedTab === "perfil" ? "bg-blue-500 text-white" : "hover:bg-gray-200"}`}
               onClick={() => setSelectedTab("perfil")}
             >
               Perfil
@@ -146,79 +127,76 @@ const FuncionariosPage = () => {
                 <section>
                   <h2 className="text-2xl font-semibold mb-4">Agendamento</h2>
                   {funcionarioData ? (
-                    <AgendamentoPage clienteId={funcionarioData.id} />
+                    <FormularioAgendamentoFuncionario
+                      passoAtual={passoAtual} // Passa o passo atual
+                      setPassoAtual={setPassoAtual} // Passa a função para mudar o passo
+                      usuarioId={funcionarioData.id} // Passa o ID do funcionário
+                    />
                   ) : (
-                    <p className="text-gray-600">
-                      Carregando dados do funcionário...
-                    </p>
+                    <p className="text-gray-600">Carregando dados do funcionário...</p>
                   )}
                 </section>
               )}
 
               {selectedTab === "consultas" && (
                 <section>
-                  <h2 className="text-2xl font-semibold mb-4">
-                    Próximas Consultas
-                  </h2>
+                  <h2 className="text-2xl font-semibold mb-4">Próximas Consultas</h2>
                   {agendamentos.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {agendamentos.map((consulta) => (
-                        <div
-                          key={consulta.id}
-                          className="p-4 border rounded-lg shadow"
-                        >
+                        <div key={consulta.id} className="p-4 border rounded-lg shadow">
                           <p>
-                            <strong>Cliente:</strong>{" "}
-                            {consulta.clienteNome || "Desconhecido"}
+                            <strong>Cliente:</strong> {consulta.clienteNome || "Desconhecido"}
                           </p>
                           <p>
-                            <strong>Data:</strong>{" "}
-                            {new Date(consulta.dataHora).toLocaleDateString()}
+                            <strong>Data:</strong> {new Date(consulta.dataHora).toLocaleDateString()}
                           </p>
                           <p>
-                            <strong>Horário:</strong>{" "}
-                            {new Date(consulta.dataHora).toLocaleTimeString()}
+                            <strong>Horário:</strong> {new Date(consulta.dataHora).toLocaleTimeString()}
                           </p>
                           <p>
-                            <strong>Serviço:</strong>{" "}
-                            {consulta.servicoNome || "Não informado"}
+                            <strong>Serviço:</strong> {consulta.servicoNome || "Não informado"}
                           </p>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-gray-600">
-                      Nenhuma consulta encontrada.
-                    </p>
+                    <p className="text-gray-600">Nenhuma consulta encontrada.</p>
                   )}
+                </section>
+              )}
+
+              {selectedTab === "historico" && (
+                <section>
+                  <h2 className="text-2xl font-semibold mb-4">Histórico</h2>
+                  {/* Aqui você pode adicionar a lógica para exibir o histórico de consultas do funcionário */}
+                  <p className="text-gray-600">Histórico de consultas ainda não implementado.</p>
                 </section>
               )}
 
               {selectedTab === "perfil" && (
                 <section>
                   <h2 className="text-2xl font-semibold mb-4">Perfil</h2>
-                  {funcionarioData ? ( // Corrigido para funcionarioData
+                  {funcionarioData ? (
                     <div className="space-y-4">
                       <div>
-                        <strong>Nome:</strong> {funcionarioData.nome} 
+                        <strong>Nome:</strong> {funcionarioData.nome}
                       </div>
                       <div>
-                        <strong>CPF:</strong> {funcionarioData.cpf} 
+                        <strong>CPF:</strong> {funcionarioData.cpf}
                       </div>
                       <div>
-                        <strong>Email:</strong> {funcionarioData.email} 
+                        <strong>Email:</strong> {funcionarioData.email}
                       </div>
                       <div>
-                        <strong>Telefone:</strong> {funcionarioData.telefone} 
+                        <strong>Telefone:</strong> {funcionarioData.telefone}
                       </div>
                       <div>
-                        <strong>Senha:</strong> <span>••••••••</span> {/* Exibindo a senha como bolinhas */}
+                        <strong>Senha:</strong> <span>••••••••</span>
                       </div>
                     </div>
                   ) : (
-                    <p className="text-gray-600">
-                      Carregando dados do funcionário...
-                    </p>
+                    <p className="text-gray-600">Carregando dados do funcionário...</p>
                   )}
                 </section>
               )}
