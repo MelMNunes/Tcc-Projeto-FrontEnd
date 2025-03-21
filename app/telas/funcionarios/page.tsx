@@ -27,8 +27,8 @@ const FuncionariosPage = () => {
   const [selectedTab, setSelectedTab] = useState("agendamento");
   const [funcionarioData, setFuncionarioData] = useState<FuncionarioData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [agendamentos, setAgendamentos] = useState<Consulta[]>([]);
-  const [passoAtual, setPassoAtual] = useState(0); // Definindo o estado passoAtual
+  const [agendamentos, setAgendamentos] = useState<{ dia: string; consultas: Consulta[] }[]>([]);
+  const [passoAtual, setPassoAtual] = useState(0);
 
   useEffect(() => {
     const userDataString = localStorage.getItem("user");
@@ -62,7 +62,31 @@ const FuncionariosPage = () => {
   const fetchAgendamentos = async (userId: number) => {
     try {
       const data = await getAgendamentosByFuncionarioId(userId);
-      setAgendamentos(data);
+      
+      // Agrupar os agendamentos por dia
+      const agendamentosPorDia: { [key: string]: Consulta[] } = {};
+  
+      data.forEach((consulta) => {
+        const dataDia = new Date(consulta.dataHora).toLocaleDateString(); // Formato de data (ex: "MM/DD/YYYY")
+        
+        if (!agendamentosPorDia[dataDia]) {
+          agendamentosPorDia[dataDia] = [];
+        }
+        agendamentosPorDia[dataDia].push(consulta);
+      });
+  
+      // Ordenar os dias
+      const diasOrdenados = Object.keys(agendamentosPorDia).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+  
+      // Ordenar os agendamentos dentro de cada dia
+      const agendamentosOrdenados = diasOrdenados.map((dia) => {
+        return {
+          dia,
+          consultas: agendamentosPorDia[dia].sort((a, b) => new Date(a.dataHora).getTime() - new Date(b.dataHora).getTime()),
+        };
+      });
+  
+      setAgendamentos(agendamentosOrdenados);
     } catch (error) {
       console.error("Erro ao buscar agendamentos:", error);
     }
@@ -111,13 +135,13 @@ const FuncionariosPage = () => {
           Sair
         </button>
       </nav>
-
+  
       <div className="flex flex-col flex-grow ml-64 min-h-screen">
         <header className="w-full bg-white shadow-md p-4">
           <h2 className="text-2xl font-semibold">Tela do Funcionário</h2>
           <p className="text-gray-600">Bem-vindo, {nome}</p>
         </header>
-
+  
         <main className="flex-grow p-8">
           {loading ? (
             <p className="text-gray-600">Carregando informações...</p>
@@ -130,33 +154,38 @@ const FuncionariosPage = () => {
                     <FormularioAgendamentoFuncionario
                       passoAtual={passoAtual} // Passa o passo atual
                       setPassoAtual={setPassoAtual} // Passa a função para mudar o passo
-                      usuarioId={funcionarioData.id} // Passa o ID do funcionário
+                      funcionarioId={funcionarioData.id} // Passa o ID do funcionário
                     />
                   ) : (
                     <p className="text-gray-600">Carregando dados do funcionário...</p>
                   )}
                 </section>
               )}
-
+  
               {selectedTab === "consultas" && (
                 <section>
                   <h2 className="text-2xl font-semibold mb-4">Próximas Consultas</h2>
                   {agendamentos.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {agendamentos.map((consulta) => (
-                        <div key={consulta.id} className="p-4 border rounded-lg shadow">
-                          <p>
-                            <strong>Cliente:</strong> {consulta.clienteNome || "Desconhecido"}
-                          </p>
-                          <p>
-                            <strong>Data:</strong> {new Date(consulta.dataHora).toLocaleDateString()}
-                          </p>
-                          <p>
-                            <strong>Horário:</strong> {new Date(consulta.dataHora).toLocaleTimeString()}
-                          </p>
-                          <p>
-                            <strong>Serviço:</strong> {consulta.servicoNome || "Não informado"}
-                          </p>
+                      {agendamentos.map((grupo) => (
+                        <div key={grupo.dia} className="mb-4">
+                          <h3 className="text-xl font-semibold">{grupo.dia}</h3>
+                          {grupo.consultas.map((consulta) => (
+                            <div key={consulta.id} className="p-4 border rounded-lg shadow">
+                              <p>
+                                <strong>Cliente:</strong> {consulta.clienteNome || "Desconhecido"}
+                              </p>
+                              <p>
+                                <strong>Data:</strong> {new Date(consulta.dataHora).toLocaleDateString()}
+                              </p>
+                              <p>
+                                <strong>Horário:</strong> {new Date(consulta.dataHora).toLocaleTimeString()}
+                              </p>
+                              <p>
+                                <strong>Serviço:</strong> {consulta.servicoNome || "Não informado"}
+                              </p>
+                            </div>
+                          ))}
                         </div>
                       ))}
                     </div>
@@ -165,15 +194,14 @@ const FuncionariosPage = () => {
                   )}
                 </section>
               )}
-
-              {selectedTab === "historico" && (
+  
+  {selectedTab === "historico" && (
                 <section>
                   <h2 className="text-2xl font-semibold mb-4">Histórico</h2>
-                  {/* Aqui você pode adicionar a lógica para exibir o histórico de consultas do funcionário */}
                   <p className="text-gray-600">Histórico de consultas ainda não implementado.</p>
                 </section>
               )}
-
+  
               {selectedTab === "perfil" && (
                 <section>
                   <h2 className="text-2xl font-semibold mb-4">Perfil</h2>

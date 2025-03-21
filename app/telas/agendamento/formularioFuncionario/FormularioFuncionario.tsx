@@ -25,14 +25,14 @@ interface Servico {
 interface FormularioAgendamentoFuncionarioProps {
   passoAtual: number;
   setPassoAtual: Dispatch<SetStateAction<number>>;
-  usuarioId: number; // ID do funcionário que está agendando
+  funcionarioId: number; // ID do funcionário que está agendando
   agendamento?: Agendamento;
 }
 
 const FormularioAgendamentoFuncionario: React.FC<FormularioAgendamentoFuncionarioProps> = ({
   passoAtual,
   setPassoAtual,
-  usuarioId,
+  funcionarioId,
   agendamento,
 }) => {
   const [mostrarModal, setMostrarModal] = useState(false);
@@ -41,6 +41,7 @@ const FormularioAgendamentoFuncionario: React.FC<FormularioAgendamentoFuncionari
   const [detalhesAgendamento, setDetalhesAgendamento] = useState({
     servicoId: agendamento?.servicoId ?? null,
     clienteId: agendamento?.clienteId ?? null,
+    funcionarioId: agendamento?.funcionarioId ?? null,
     data: agendamento ? agendamento.dataHora.split("T")[0] : "",
     horario: agendamento
       ? new Date(agendamento.dataHora).toLocaleTimeString([], {
@@ -53,7 +54,7 @@ const FormularioAgendamentoFuncionario: React.FC<FormularioAgendamentoFuncionari
 
   useEffect(() => {
     // Carregar clientes
-    fetch("http://localhost:8080/api/usuarios/listar/CLIENTE") // Chame o endpoint para listar clientes
+    fetch("http://localhost:8080/api/usuarios/listar/CLIENTE")
       .then((res) => res.json())
       .then(setClientes)
       .catch((err) => console.error("Erro ao carregar clientes:", err));
@@ -66,14 +67,23 @@ const FormularioAgendamentoFuncionario: React.FC<FormularioAgendamentoFuncionari
   }, []);
 
   const avancarPasso = () => {
-    if (passoAtual === 0 && detalhesAgendamento.servicoId === null) {
+    if (passoAtual === 0 && !detalhesAgendamento.servicoId) {
       alert("Por favor, selecione um serviço antes de continuar.");
       return;
     }
-    if (passoAtual === 1 && detalhesAgendamento.clienteId === null) {
+    if (passoAtual === 1 && !detalhesAgendamento.clienteId) {
       alert("Por favor, selecione um cliente antes de continuar.");
       return;
     }
+    if (passoAtual === 2 && !detalhesAgendamento.data) {
+      alert("Por favor, selecione uma data antes de continuar.");
+      return;
+    }
+    if (passoAtual === 3 && !detalhesAgendamento.horario) {
+      alert("Por favor, selecione um horário antes de continuar.");
+      return;
+    }
+  
     setPassoAtual((prev) => Math.min(prev + 1, 4));
   };
 
@@ -105,7 +115,7 @@ const FormularioAgendamentoFuncionario: React.FC<FormularioAgendamentoFuncionari
 
     const agendamentoData = {
       clienteId,
-      funcionarioId: usuarioId,
+      funcionarioId,
       servicoId,
       dataHora: dataHoraCombinada,
       descricao,
@@ -145,7 +155,7 @@ const FormularioAgendamentoFuncionario: React.FC<FormularioAgendamentoFuncionari
     <div className="flex flex-col w-full max-w-2xl p-6 bg-white rounded-2xl shadow-lg border">
       {passoAtual === 0 && (
         <div>
-          <h2 className="text-xl font-semibold">Escolha o Serviço</h2>
+                    <h2 className="text-2xl font-semibold mb-4">Escolha o Serviço</h2>
           <div className="space-y-2">
             {servicos.length > 0 ? (
               servicos.map((servico) => (
@@ -156,9 +166,9 @@ const FormularioAgendamentoFuncionario: React.FC<FormularioAgendamentoFuncionari
                     value={servico.id}
                     checked={detalhesAgendamento.servicoId === servico.id}
                     onChange={() => handleServicoChange(servico.id)}
-                    className="w-5 h-5"
+                    className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
-                  <span>
+                  <span className="text-gray-700">
                     {servico.nome} - R$ {servico.preco.toFixed(2)}
                   </span>
                 </label>
@@ -172,9 +182,9 @@ const FormularioAgendamentoFuncionario: React.FC<FormularioAgendamentoFuncionari
 
       {passoAtual === 1 && (
         <div>
-          <h2 className="text-xl font-semibold">Escolha o Cliente</h2>
+          <h2 className="text-2xl font-semibold mb-4">Escolha o Cliente</h2>
           <select
-            className="w-full p-2 border rounded-lg"
+            className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={detalhesAgendamento.clienteId ?? ""}
             onChange={(e) => handleClienteChange(Number(e.target.value))}
           >
@@ -190,10 +200,10 @@ const FormularioAgendamentoFuncionario: React.FC<FormularioAgendamentoFuncionari
 
       {passoAtual === 2 && (
         <div>
-          <h2 className="text-xl font-semibold">Escolha a Data</h2>
+          <h2 className="text-2xl font-semibold mb-4">Escolha a Data</h2>
           <input
             type="date"
-            className="w-full p-2 border rounded-lg"
+            className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={detalhesAgendamento.data}
             onChange={(e) =>
               setDetalhesAgendamento((prev) => ({
@@ -207,10 +217,10 @@ const FormularioAgendamentoFuncionario: React.FC<FormularioAgendamentoFuncionari
 
       {passoAtual === 3 && (
         <div>
-          <h2 className="text-xl font-semibold">Escolha o Horário</h2>
+          <h2 className="text-2xl font-semibold mb-4">Escolha o Horário</h2>
           <input
             type="time"
-            className="w-full p-2 border rounded-lg"
+            className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={detalhesAgendamento.horario}
             onChange={(e) =>
               setDetalhesAgendamento((prev) => ({
@@ -224,9 +234,9 @@ const FormularioAgendamentoFuncionario: React.FC<FormularioAgendamentoFuncionari
 
       {passoAtual === 4 && (
         <div>
-          <h2 className="text-xl font-semibold">Detalhes do Agendamento</h2>
+          <h2 className="text-2xl font-semibold mb-4">Detalhes do Agendamento</h2>
           <textarea
-            className="w-full p-2 border rounded-lg"
+            className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Detalhes adicionais..."
             value={detalhesAgendamento.descricao}
             onChange={(e) =>
@@ -242,7 +252,7 @@ const FormularioAgendamentoFuncionario: React.FC<FormularioAgendamentoFuncionari
       <div className="flex justify-between border-t pt-4">
         {passoAtual > 0 && (
           <button
-            className="px-4 py-2 bg-gray-400 text-white rounded-lg"
+            className="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500"
             onClick={voltarPasso}
           >
             Voltar
@@ -266,17 +276,17 @@ const FormularioAgendamentoFuncionario: React.FC<FormularioAgendamentoFuncionari
       </div>
 
       {mostrarModal && (
-        <ModalConfirmacao
-          isOpen={mostrarModal}
-          onClose={() => setMostrarModal(false)}
-          onConfirm={handleConfirmarAgendamento} // Chama a função de confirmação
+        <ModalConfirmacao 
+          isOpen={mostrarModal} 
+          onClose={() => setMostrarModal(false)} 
+          onConfirm={handleConfirmarAgendamento} 
           detalhes={{
             servicoId: detalhesAgendamento.servicoId,
-            funcionario: usuarioId.toString(), // Aqui você pode passar o nome do funcionário se necessário
+            funcionario: funcionarioId.toString(), // Aqui você pode passar o nome do funcionário se necessário
             cliente: clientes.find((cli) => cli.id === detalhesAgendamento.clienteId)?.nome || "",
             data: detalhesAgendamento.data,
             horario: detalhesAgendamento.horario,
-            outros: detalhesAgendamento.descricao,
+            outros: detalhesAgendamento.descricao
           }}
           servicosList={servicos}
         />

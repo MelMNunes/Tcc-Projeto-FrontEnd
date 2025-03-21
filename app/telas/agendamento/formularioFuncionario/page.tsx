@@ -3,16 +3,16 @@ import FormularioFuncionario from "./FormularioFuncionario";
 
 const Page: React.FC = () => {
   const [passoAtual, setPassoAtual] = useState(0);
-  const [usuarioId, setUsuarioId] = useState<number | null>(null); // Estado para armazenar o ID do usuário
+  const [funcionarioId, setfuncionarioId] = useState<number | null>(null); // Estado para armazenar o ID do usuário
 
   useEffect(() => {
     const id = localStorage.getItem("id"); // Supondo que o ID do usuário esteja armazenado no localStorage
     if (id) {
-      setUsuarioId(Number(id)); // Converte o ID para número e armazena no estado
+      setfuncionarioId(Number(id)); // Converte o ID para número e armazena no estado
     }
   }, []);
 
-  if (usuarioId === null) {
+  if (funcionarioId === null) {
     return <p>Carregando informações do usuário...</p>; // Exibe uma mensagem enquanto o ID do usuário não é carregado
   }
 
@@ -21,7 +21,7 @@ const Page: React.FC = () => {
       <FormularioFuncionario 
         passoAtual={passoAtual} 
         setPassoAtual={setPassoAtual} 
-        usuarioId={usuarioId} // Passa o ID do usuário para o FormularioFuncionario
+        funcionarioId={funcionarioId} // Passa o ID do usuário para o FormularioFuncionario
       />
     </div>
   );
