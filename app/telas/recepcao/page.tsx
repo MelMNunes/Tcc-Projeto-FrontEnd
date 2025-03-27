@@ -4,17 +4,28 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import FormularioAdmin from "../agendamento/formularioAdmin/page";
 
-// Definição dos tipos
 interface Cliente {
   id: number;
   nome: string;
+}
+
+interface Funcionario {
+  id: number;
+  nome: string;
+}
+
+interface Servico {
+  id: number;
+  nome: string;
+  preco: number;
 }
 
 interface Agendamento {
   id: number;
   cliente: Cliente;
   dataHora: string;
-  funcionarioId: number;
+  funcionario: Funcionario;
+  servico: Servico;
   servicoId: number;
 }
 
@@ -30,14 +41,13 @@ const RecepcaoPage: React.FC = () => {
   const router = useRouter();
   const [selectedTab, setSelectedTab] = useState<"fila" | "agendamentos" | "pagamentos">("fila");
   const [agendamentos, setAgendamentos] = useState<AgendamentoCompleto[]>([]);
-  const [filtro, setFiltro] = useState<"dia" | "semana">("dia");
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     if (selectedTab === "fila") {
       buscarAgendamentos();
     }
-  }, [selectedTab, filtro]);
+  }, [selectedTab]);
 
   const handleLogout = () => {
     localStorage.removeItem("user");
@@ -48,8 +58,6 @@ const RecepcaoPage: React.FC = () => {
   const buscarAgendamentos = async () => {
     try {
       setLoading(true);
-
-      // Fazendo a requisição dos agendamentos
       const response = await fetch("http://localhost:8080/api/agendamentos/buscar/todos", {
         method: "GET",
         headers: {
@@ -63,22 +71,18 @@ const RecepcaoPage: React.FC = () => {
       }
 
       const data: Agendamento[] = await response.json();
-
-      // Buscando funcionários e serviços
       const agendamentosCompletos = await Promise.all(
         data.map(async (agendamento) => {
-          const funcionarioRes = await fetch(`http://localhost:8080/api/usuarios/${agendamento.funcionarioId}`);
-          const servicoRes = await fetch(`http://localhost:8080/api/servicos/${agendamento.servicoId}`);
-
-          const funcionario = funcionarioRes.ok ? await funcionarioRes.json() : null;
-          const servico = servicoRes.ok ? await servicoRes.json() : null;
+          const clienteNome = agendamento.cliente?.nome ?? "Cliente desconhecido";
+          const funcionarioNome = agendamento.funcionario?.nome ?? "Funcionário não encontrado";
+          const servicoNome = agendamento.servico?.nome ?? "Serviço não encontrado";
 
           return {
             id: agendamento.id,
             dataHora: agendamento.dataHora,
-            clienteNome: agendamento.cliente?.nome ?? "Desconhecido",
-            funcionarioNome: funcionario?.nome ?? "Funcionário não encontrado",
-            servicoNome: servico?.nome ?? "Serviço não encontrado",
+            clienteNome,
+            funcionarioNome,
+            servicoNome,
           };
         })
       );
@@ -118,66 +122,41 @@ const RecepcaoPage: React.FC = () => {
             >
               Pagamentos
             </li>
-          </ul>
           <button
-            className="bg-red-500 text-white rounded px-4 py-2 hover:bg-red-600 w-full mt-4"
+            className="bg-red-500 text-white rounded px-4 py-2 hover:bg-red-600 w-full mt-5 mb-2"
             onClick={handleLogout}
+
           >
             Sair
           </button>
+          </ul>
         </nav>
 
         <main className="w-3/4 bg-white p-6 rounded-lg shadow-md ml-auto mt-16">
           {selectedTab === "fila" && (
             <div>
               <h2 className="text-xl font-semibold mb-2">Fila de Atendimento</h2>
-              <div className="flex space-x-4 mb-4">
-                <button
-                  className={`px-4 py-2 rounded ${filtro === "dia" ? "bg-blue-500 text-white" : "bg-gray-200"}`}
-                  onClick={() => setFiltro("dia")}
-                >
-                  Hoje
-                </button>
-                <button
-                  className={`px-4 py-2 rounded ${filtro === "semana" ? "bg-blue-500 text-white" : "bg-gray-200"}`}
-                  onClick={() => setFiltro("semana")}
-                >
-                  Semana
-                </button>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {loading ? (
-                  <p>Carregando agendamentos...</p>
-                ) : agendamentos.length > 0 ? (
-                  agendamentos.map((agendamento) => (
-                    <div key={agendamento.id} className="p-4 bg-gray-100 rounded shadow">
-                      <p><strong>Cliente:</strong> {agendamento.clienteNome}</p>
-                      <p><strong>Funcionário:</strong> {agendamento.funcionarioNome}</p>
-                      <p><strong>Serviço:</strong> {agendamento.servicoNome}</p>
-                      <p><strong>Data:</strong> {new Date(agendamento.dataHora).toLocaleDateString()}</p>
-                      <p><strong>Horário:</strong> {new Date(agendamento.dataHora).toLocaleTimeString()}</p>
+              {loading ? (
+                <p>Carregando agendamentos...</p>
+              ) : agendamentos.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {agendamentos.map((consulta) => (
+                    <div key={consulta.id} className="p-4 bg-gray-100 rounded shadow">
+                      <p><strong>Cliente:</strong> {consulta.clienteNome}</p>
+                      <p><strong>Funcionário:</strong> {consulta.funcionarioNome}</p>
+                      <p><strong>Serviço:</strong> {consulta.servicoNome}</p>
+                      <p><strong>Data:</strong> {new Date(consulta.dataHora).toLocaleDateString()}</p>
+                      <p><strong>Horário:</strong> {new Date(consulta.dataHora).toLocaleTimeString()}</p>
                     </div>
-                  ))
-                ) : (
-                  <p className="text-gray-600">Nenhum agendamento encontrado.</p>
-                )}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600">Nenhum agendamento encontrado.</p>
+              )}
             </div>
           )}
 
-          {selectedTab === "agendamentos" && (
-            <div>
-              <h2 className="text-xl font-semibold mb-2">Agendamentos</h2>
-              <FormularioAdmin/>
-            </div>
-          )}
-
-          {selectedTab === "pagamentos" && (
-            <div>
-              <h2 className="text-xl font-semibold mb-2">Pagamentos</h2>
-              <p className="text-gray-600">Confirmação de pagamentos e métodos utilizados.</p>
-            </div>
-          )}
+          {selectedTab === "agendamentos" && <FormularioAdmin />}
         </main>
       </div>
     </div>
@@ -185,3 +164,4 @@ const RecepcaoPage: React.FC = () => {
 };
 
 export default RecepcaoPage;
+                      

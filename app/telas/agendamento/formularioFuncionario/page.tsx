@@ -17,8 +17,8 @@ const Page: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col w-full h-screen p-4">
-      <FormularioFuncionario 
+    <div className="flex flex-col w-full h-screen p-4 text-black">
+      <FormularioFuncionario
         passoAtual={passoAtual} 
         setPassoAtual={setPassoAtual} 
         funcionarioId={funcionarioId} // Passa o ID do usuário para o FormularioFuncionario

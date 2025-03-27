@@ -16,6 +16,11 @@ interface Cliente {
   nome: string;
 }
 
+interface Funcionario {
+  id: number;
+  nome: string;
+}
+
 interface Servico {
   id: number;
   nome: string;
@@ -25,18 +30,16 @@ interface Servico {
 interface FormularioAgendamentoFuncionarioProps {
   passoAtual: number;
   setPassoAtual: Dispatch<SetStateAction<number>>;
-  funcionarioId: number; // ID do funcionário que está agendando
+  funcionarioId: number;
   agendamento?: Agendamento;
 }
 
-const FormularioAgendamentoFuncionario: React.FC<FormularioAgendamentoFuncionarioProps> = ({
-  passoAtual,
-  setPassoAtual,
-  funcionarioId,
-  agendamento,
-}) => {
+const FormularioAgendamentoFuncionario: React.FC<
+  FormularioAgendamentoFuncionarioProps
+> = ({ passoAtual, setPassoAtual, funcionarioId, agendamento }) => {
   const [mostrarModal, setMostrarModal] = useState(false);
   const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
   const [servicos, setServicos] = useState<Servico[]>([]);
   const [detalhesAgendamento, setDetalhesAgendamento] = useState({
     servicoId: agendamento?.servicoId ?? null,
@@ -58,6 +61,12 @@ const FormularioAgendamentoFuncionario: React.FC<FormularioAgendamentoFuncionari
       .then((res) => res.json())
       .then(setClientes)
       .catch((err) => console.error("Erro ao carregar clientes:", err));
+
+    // Carregar funcionarios
+    fetch("http://localhost:8080/api/usuarios/listar/FUNCIONARIO")
+      .then((res) => res.json())
+      .then(setFuncionarios)
+      .catch((err) => console.error("Erro ao carregar funcionarios:", err));
 
     // Carregar serviços
     fetch("http://localhost:8080/api/servicos/listarServicos")
@@ -83,7 +92,7 @@ const FormularioAgendamentoFuncionario: React.FC<FormularioAgendamentoFuncionari
       alert("Por favor, selecione um horário antes de continuar.");
       return;
     }
-  
+
     setPassoAtual((prev) => Math.min(prev + 1, 4));
   };
 
@@ -104,7 +113,8 @@ const FormularioAgendamentoFuncionario: React.FC<FormularioAgendamentoFuncionari
   };
 
   const handleSubmit = async () => {
-    const { data, horario, descricao, servicoId, clienteId } = detalhesAgendamento;
+    const { data, horario, descricao, servicoId, clienteId } =
+      detalhesAgendamento;
 
     if (!data || !horario || !servicoId || !clienteId) {
       alert("Preencha todos os campos antes de continuar.");
@@ -140,22 +150,22 @@ const FormularioAgendamentoFuncionario: React.FC<FormularioAgendamentoFuncionari
 
       const responseData = await response.json();
       console.log("Agendamento salvo com sucesso:", responseData);
-      setMostrarModal(true); // Abre o modal de confirmação
+      setMostrarModal(true);
     } catch (error) {
       console.error("Erro ao salvar agendamento:", error);
     }
   };
 
   const handleConfirmarAgendamento = async () => {
-    await handleSubmit(); // Chama a função de submissão
-    setMostrarModal(false); // Fecha o modal após a confirmação
+    await handleSubmit();
+    setMostrarModal(false);
   };
 
   return (
     <div className="flex flex-col w-full max-w-2xl p-6 bg-white rounded-2xl shadow-lg border">
       {passoAtual === 0 && (
         <div>
-                    <h2 className="text-2xl font-semibold mb-4">Escolha o Serviço</h2>
+          <h2 className="text-2xl font-semibold mb-4">Escolha o Serviço</h2>
           <div className="space-y-2">
             {servicos.length > 0 ? (
               servicos.map((servico) => (
@@ -234,7 +244,9 @@ const FormularioAgendamentoFuncionario: React.FC<FormularioAgendamentoFuncionari
 
       {passoAtual === 4 && (
         <div>
-          <h2 className="text-2xl font-semibold mb-4">Detalhes do Agendamento</h2>
+          <h2 className="text-2xl font-semibold mb-4">
+            Detalhes do Agendamento
+          </h2>
           <textarea
             className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Detalhes adicionais..."
@@ -276,17 +288,21 @@ const FormularioAgendamentoFuncionario: React.FC<FormularioAgendamentoFuncionari
       </div>
 
       {mostrarModal && (
-        <ModalConfirmacao 
-          isOpen={mostrarModal} 
-          onClose={() => setMostrarModal(false)} 
-          onConfirm={handleConfirmarAgendamento} 
+        <ModalConfirmacao
+          isOpen={mostrarModal}
+          onClose={() => setMostrarModal(false)}
+          onConfirm={handleConfirmarAgendamento}
           detalhes={{
             servicoId: detalhesAgendamento.servicoId,
-            funcionario: funcionarioId.toString(), // Aqui você pode passar o nome do funcionário se necessário
-            cliente: clientes.find((cli) => cli.id === detalhesAgendamento.clienteId)?.nome || "",
+            funcionario:
+              funcionarios.find((func) => func.id === funcionarioId)?.nome ||
+              "Funcionário Não Encontrado",
+            cliente:
+              clientes.find((cli) => cli.id === detalhesAgendamento.clienteId)
+                ?.nome || "Cliente Não Encontrado",
             data: detalhesAgendamento.data,
             horario: detalhesAgendamento.horario,
-            outros: detalhesAgendamento.descricao
+            outros: detalhesAgendamento.descricao,
           }}
           servicosList={servicos}
         />

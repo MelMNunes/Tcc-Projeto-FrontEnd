@@ -30,7 +30,7 @@ interface Servico {
 interface FormularioAdminProps {
   passoAtual: number;
   setPassoAtual: Dispatch<SetStateAction<number>>;
-  usuarioId: number; // ID do administrador que está agendando
+  usuarioId: number;
   agendamento?: Agendamento;
 }
 
@@ -98,7 +98,11 @@ const FormularioAdmin: React.FC<FormularioAdminProps> = ({
       alert("Por favor, escolha um horário antes de continuar.");
       return;
     }
-    setPassoAtual((prev) => Math.min(prev + 1, 4));
+    if (passoAtual === 5 && !detalhesAgendamento.horario) {
+      alert("Por favor, relate seus sintomas antes de continuar.");
+      return;
+    }
+    setPassoAtual((prev) => Math.min(prev + 1, 5));
   };
 
   const voltarPasso = () => setPassoAtual((prev) => Math.max(prev - 1, 0));
@@ -125,7 +129,8 @@ const FormularioAdmin: React.FC<FormularioAdminProps> = ({
   };
 
   const handleSubmit = async () => {
-    const { data, horario, descricao, servicoId, clienteId, funcionarioId } = detalhesAgendamento;
+    const { data, horario, descricao, servicoId, clienteId, funcionarioId } =
+      detalhesAgendamento;
 
     if (!data || !horario || !servicoId || !clienteId || !funcionarioId) {
       alert("Preencha todos os campos antes de continuar.");
@@ -161,15 +166,15 @@ const FormularioAdmin: React.FC<FormularioAdminProps> = ({
 
       const responseData = await response.json();
       console.log("Agendamento salvo com sucesso:", responseData);
-      setMostrarModal(true); // Abre o modal de confirmação
+      setMostrarModal(true);
     } catch (error) {
       console.error("Erro ao salvar agendamento:", error);
     }
   };
 
   const handleConfirmarAgendamento = async () => {
-    await handleSubmit(); // Chama a função de submissão
-    setMostrarModal(false); // Fecha o modal após a confirmação
+    await handleSubmit();
+    setMostrarModal(false);
   };
 
   return (
@@ -271,6 +276,25 @@ const FormularioAdmin: React.FC<FormularioAdminProps> = ({
         </div>
       )}
 
+      {passoAtual === 5 && (
+        <div>
+          <h2 className="text-2xl font-semibold mb-4">
+            Detalhes do Agendamento
+          </h2>
+          <textarea
+            className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Detalhes adicionais..."
+            value={detalhesAgendamento.descricao}
+            onChange={(e) =>
+              setDetalhesAgendamento((prev) => ({
+                ...prev,
+                descricao: e.target.value,
+              }))
+            }
+          />
+        </div>
+      )}
+
       <div className="flex justify-between border-t pt-4">
         {passoAtual > 0 && (
           <button
@@ -280,10 +304,10 @@ const FormularioAdmin: React.FC<FormularioAdminProps> = ({
             Voltar
           </button>
         )}
-        {passoAtual === 4 ? (
+        {passoAtual === 5 ? (
           <button
             className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg"
-            onClick={() => setMostrarModal(true)} // Abre o modal ao confirmar
+            onClick={() => setMostrarModal(true)}
           >
             Confirmar Agendamento
           </button>
@@ -301,11 +325,16 @@ const FormularioAdmin: React.FC<FormularioAdminProps> = ({
         <ModalConfirmacao
           isOpen={mostrarModal}
           onClose={() => setMostrarModal(false)}
-          onConfirm={handleConfirmarAgendamento} // Chama a função de confirmação
+          onConfirm={handleConfirmarAgendamento} 
           detalhes={{
             servicoId: detalhesAgendamento.servicoId,
-            funcionario: funcionarios.find((func) => func.id === detalhesAgendamento.funcionarioId)?.nome || "",
-            cliente: clientes.find((cli) => cli.id === detalhesAgendamento.clienteId)?.nome || "",
+            funcionario:
+              funcionarios.find(
+                (func) => func.id === detalhesAgendamento.funcionarioId
+              )?.nome || "",
+            cliente:
+              clientes.find((cli) => cli.id === detalhesAgendamento.clienteId)
+                ?.nome || "",
             data: detalhesAgendamento.data,
             horario: detalhesAgendamento.horario,
             outros: detalhesAgendamento.descricao,
