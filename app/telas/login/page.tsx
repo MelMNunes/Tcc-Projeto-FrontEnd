@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { login } from "@/app/services/authService";
 import MaskedInput from "@/app/components/InputMask";
+import { Eye, EyeOff } from "react-feather";
 
 interface InputProps {
   type: string;
@@ -51,13 +52,44 @@ const LoginCadastro = () => {
   const [nome, setNome] = useState("");
   const [cpf, setCpf] = useState("");
   const [telefone, setTelefone] = useState("");
-  const [senha, setSenha] = useState("");
   const [confirmarSenha, setConfirmarSenha] = useState("");
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [senha, setSenha] = useState("");
+  const [validacoes, setValidacoes] = useState({
+    hasUppercase: false,
+    haslowercase: false,
+    hasNumber: false,
+    isLongEnough: false,
+  });
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const validarSenha = (senha: string) => {
+    const hasUppercase = /[A-Z]/.test(senha);
+    const haslowercase = /[a-z]/.test(senha);
+    const hasNumber = /\d/.test(senha);
+    const isLongEnough = senha.length >= 8;
+
+    setValidacoes({
+      hasUppercase,
+      haslowercase,
+      hasNumber,
+      isLongEnough,
+    });
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    // Verifica se os campos estão vazios
+    if (!email || !password) {
+      setError("Por favor, preencha todos os campos.");
+      return;
+    }
 
     try {
       const response = await login({ login: email, senha: password });
@@ -65,22 +97,19 @@ const LoginCadastro = () => {
       console.log("Resposta do login:", response); // Verificar o que está sendo retornado
 
       if (response.token) {
+        // Código para armazenar o token e redirecionar o usuário
         localStorage.setItem("token", response.token);
         localStorage.setItem("tipoDeUsuario", response.tipoDeUsuario);
         localStorage.setItem("nome", response.nome);
         localStorage.setItem("id", response.id);
-
-        // Salvar todos os dados de usuário em 'user' no localStorage
         localStorage.setItem(
           "user",
           JSON.stringify({
             nome: response.nome,
-            email: email, // ou pegar diretamente do response se já estiver no retorno
+            email: email,
             tipoDeUsuario: response.tipoDeUsuario,
           })
         );
-
-        console.log("nome salvo no storage:", response.nome);
 
         alert("Login realizado com sucesso!");
 
@@ -102,25 +131,49 @@ const LoginCadastro = () => {
             router.push("/");
         }
       } else {
+        // Aqui você pode adicionar lógica para mensagens de erro específicas
         setError("Erro ao fazer login. Verifique suas credenciais.");
       }
     } catch (err) {
       console.error("Erro no login:", err);
-      setError(
-        err instanceof Error ? err.message : "Erro desconhecido ao fazer login."
-      );
+
+      // Aqui você pode verificar se o erro tem uma mensagem específica
+      if (err instanceof Error) {
+        if (err.message.includes("email")) {
+          setError("Email incorreto. Tente novamente.");
+        } else if (err.message.includes("senha")) {
+          setError("Senha incorreta. Tente novamente.");
+        } else {
+          setError(err.message);
+        }
+      } else {
+        setError("Erro desconhecido ao fazer login.");
+      }
     }
   };
 
   const handleCadastro = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-
+  
+    // Verifica se os campos estão vazios
+    if (
+      !nome ||
+      !email ||
+      !cpf ||
+      !telefone ||
+      !senha ||
+      !confirmarSenha
+    ) {
+      setError("Por favor, preencha todos os campos.");
+      return;
+    }
+  
     if (senha !== confirmarSenha) {
       setError("As senhas não são iguais!");
       return;
     }
-
+  
     console.log("Enviando dados para cadastro:", {
       email,
       nome,
@@ -128,7 +181,7 @@ const LoginCadastro = () => {
       telefone,
       senha,
     });
-
+  
     try {
       const response = await fetch(
         "http://localhost:8080/api/usuarios/cadastrar-cliente",
@@ -147,20 +200,20 @@ const LoginCadastro = () => {
           }),
         }
       );
-
+  
       // Verifica se a resposta tem conteúdo JSON válido
       const contentType = response.headers.get("Content-Type");
       let data = null;
-
+  
       if (contentType && contentType.includes("application/json")) {
         data = await response.json();
       } else {
         data = await response.text(); // Caso o servidor retorne texto puro
         console.warn("Resposta do servidor não é JSON:", data);
       }
-
+  
       console.log("Resposta do servidor:", data);
-
+  
       if (response.ok) {
         alert("Cadastro realizado com sucesso!");
       } else {
@@ -175,74 +228,6 @@ const LoginCadastro = () => {
       );
     }
   };
-
-  // const handleCadastro = async (e: React.FormEvent) => {
-  //   e.preventDefault();
-  //   setError("");
-  
-  //   if (senha !== confirmarSenha) {
-  //     setError("As senhas não são iguais!");
-  //     return;
-  //   }
-  
-  //   console.log("Enviando dados para cadastro:", {
-  //     email,
-  //     nome,
-  //     cpf,
-  //     telefone,
-  //     senha,
-  //   });
-  
-  //   // Substitua "http://localhost:8080" pela URL do Ngrok do backend
-  //   const backendUrl = "https://8bc5-186-251-165-84.ngrok-free.app/"; // Seu link do Ngrok
-  
-  //   try {
-  //     const response = await fetch(
-  //       `${backendUrl}/api/usuarios/cadastrar-cliente`,
-  //       {
-  //         method: "POST",
-  //         headers: {
-  //           "Content-Type": "application/json",
-  //           Authorization: `Bearer ${localStorage.getItem("token")}`, // Caso precise de autenticação
-  //         },
-  //         body: JSON.stringify({
-  //           nome,
-  //           email,
-  //           cpf,
-  //           telefone,
-  //           senha,
-  //         }),
-  //       }
-  //     );
-  
-  //     // Verifica se a resposta tem conteúdo JSON válido
-  //     const contentType = response.headers.get("Content-Type");
-  //     let data = null;
-  
-  //     if (contentType && contentType.includes("application/json")) {
-  //       data = await response.json();
-  //     } else {
-  //       data = await response.text(); // Caso o servidor retorne texto puro
-  //       console.warn("Resposta do servidor não é JSON:", data);
-  //     }
-  
-  //     console.log("Resposta do servidor:", data);
-  
-  //     if (response.ok) {
-  //       alert("Cadastro realizado com sucesso!");
-  //     } else {
-  //       setError(data?.message || "Erro ao cadastrar usuário.");
-  //     }
-  //   } catch (err) {
-  //     console.error("Erro ao cadastrar usuário:", err);
-  //     setError(
-  //       err instanceof Error
-  //         ? err.message
-  //         : "Erro desconhecido ao cadastrar usuário."
-  //     );
-  //   }
-  // };
-  
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-100 to-blue-300">
@@ -269,25 +254,6 @@ const LoginCadastro = () => {
             Cadastro
           </button>
         </div>
-
-        {activeTab === "login" && (
-          <form onSubmit={handleLogin} className="space-y-4 text-black">
-            <Input
-              type="email"
-              placeholder="Digite seu e-mail"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <Input
-              type="password"
-              placeholder="Digite sua senha"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            {error && <p className="text-red-500">{error}</p>}
-            <Button type="submit">Entrar</Button>
-          </form>
-        )}
 
         {activeTab === "cadastro" && (
           <form onSubmit={handleCadastro} className="space-y-4">
@@ -316,12 +282,57 @@ const LoginCadastro = () => {
               className="w-full border border-gray-300 px-3 py-2 rounded-md text-black placeholder-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-200"
             />
 
-            <Input
-              type="password"
-              placeholder="Digite sua senha"
-              value={senha}
-              onChange={(e) => setSenha(e.target.value)}
-            />
+            <div className="relative">
+              <Input
+                type={showPassword ? "text" : "password"}
+                placeholder="Digite sua senha"
+                value={senha}
+                onChange={(e) => {
+                  setSenha(e.target.value);
+                  validarSenha(e.target.value);
+                }}
+              />
+              <button
+                type="button"
+                onClick={togglePasswordVisibility}
+                className="absolute right-3 top-3"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+
+              <div className="text-sm text-black">
+                <p>Requisitos da senha:</p>
+                <ul className="list-disc list-inside">
+                  <li
+                    style={{
+                      color: validacoes.hasUppercase ? "green" : "gray",
+                    }}
+                  >
+                    Pelo menos uma letra maiúscula
+                  </li>
+                  <li
+                    style={{
+                      color: validacoes.haslowercase ? "green" : "gray",
+                    }}
+                  >
+                    Pelo menos uma letra minúscula
+                  </li>
+                  <li
+                    style={{ color: validacoes.hasNumber ? "green" : "gray" }}
+                  >
+                    Pelo menos um número
+                  </li>
+                  <li
+                    style={{
+                      color: validacoes.isLongEnough ? "green" : "gray",
+                    }}
+                  >
+                    Mínimo de 8 caracteres
+                  </li>
+                </ul>
+              </div>
+            </div>
+
             <Input
               type="password"
               placeholder="Confirme sua senha"
@@ -330,6 +341,25 @@ const LoginCadastro = () => {
             />
             {error && <p className="text-red-500">{error}</p>}
             <Button type="submit">Cadastrar</Button>
+          </form>
+        )}
+
+        {activeTab === "login" && (
+          <form onSubmit={handleLogin} className="space-y-4 text-black">
+            <Input
+              type="email"
+              placeholder="Digite seu e-mail"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            <Input
+              type="password"
+              placeholder="Digite sua senha"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            {error && <p className="text-red-500">{error}</p>}
+            <Button type="submit">Entrar</Button>
           </form>
         )}
       </div>
