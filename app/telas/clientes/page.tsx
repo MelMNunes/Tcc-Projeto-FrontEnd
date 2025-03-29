@@ -19,8 +19,9 @@ const ClientesPage = () => {
     telefone: string;
     cpf: string;
     senha: string;
+    tipoDeUsuario: string; // Adicionando o tipo de usuário
     proximasConsultas: Consulta[];
-    historico: Consulta[];
+    // historico: Consulta[];
   }
 
   const [nome, setNome] = useState<string>("");
@@ -28,6 +29,10 @@ const ClientesPage = () => {
   const [clienteData, setClienteData] = useState<ClienteData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [agendamentos, setAgendamentos] = useState<Consulta[]>([]);
+  const [editing, setEditing] = useState<boolean>(false); // Estado para controle de edição
+  const [newEmail, setNewEmail] = useState<string>("");
+  const [newTelefone, setNewTelefone] = useState<string>("");
+  const [newSenha, setNewSenha] = useState<string>("");
 
   useEffect(() => {
     const userDataString = localStorage.getItem("user");
@@ -51,6 +56,8 @@ const ClientesPage = () => {
     try {
       const data = await getUsuarioById(userId);
       setClienteData(data);
+      setNewEmail(data.email); // Preenche o novo email com o atual
+      setNewTelefone(data.telefone); // Preenche o novo telefone com o atual
     } catch (error) {
       console.error("Erro ao buscar dados do cliente:", error);
     } finally {
@@ -65,6 +72,34 @@ const ClientesPage = () => {
       setAgendamentos(data);
     } catch (error) {
       console.error("Erro ao buscar agendamentos:", error);
+    }
+  };
+
+  const handleUpdateProfile = async () => {
+    const userId = clienteData?.id;
+    if (!userId) return;
+
+    const response = await fetch(`http://localhost:8080/api/usuarios/editar/${userId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        nome: clienteData.nome,
+        email: newEmail,
+        telefone: newTelefone,
+        senha: newSenha, // Enviar nova senha se fornecida
+        tipoDeUsuario: clienteData.tipoDeUsuario, // Enviar o tipo de usuário
+      }),
+    });
+
+    if (response.ok) {
+      alert("Perfil atualizado com sucesso!");
+      fetchClienteData(userId); // Recarrega os dados do cliente
+      setEditing(false); // Fecha o modo de edição
+    } else {
+      const errorMessage = await response.text();
+      alert("Erro ao atualizar perfil: " + errorMessage);
     }
   };
 
@@ -86,12 +121,12 @@ const ClientesPage = () => {
             >
               Próximas Consultas
             </li>
-            <li
+            {/* <li
               className={`p-2 rounded cursor-pointer ${selectedTab === "historico" ? "bg-blue-500 text-white" : "hover:bg-gray-200"}`}
               onClick={() => setSelectedTab("historico")}
             >
               Histórico
-            </li>
+            </li> */}
             <li
               className={`p-2 rounded cursor-pointer ${selectedTab === "perfil" ? "bg-blue-500 text-white" : "hover:bg-gray-200"}`}
               onClick={() => setSelectedTab("perfil")}
@@ -161,16 +196,68 @@ const ClientesPage = () => {
               {selectedTab === "perfil" && (
                 <section>
                   <h2 className="text-2xl font-semibold mb-4">Perfil</h2>
-                  {clienteData ? (
+                  {editing ? (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block"><strong>Nome:</strong> {clienteData.nome}</label>
+                      </div>
+                      <div>
+                        <label className="block"><strong>Email:</strong>
+                          <input 
+                            type="email" 
+                            value={newEmail} 
+                            onChange={(e) => setNewEmail(e.target.value)} 
+                            className="border rounded p-1 w-full"
+                          />
+                        </label>
+                      </div>
+                      <div>
+                        <label className="block"><strong>Telefone:</strong>
+                          <input 
+                            type="text" 
+                            value={newTelefone} 
+                            onChange={(e) => setNewTelefone(e.target.value)} 
+                            className="border rounded p-1 w-full"
+                          />
+                        </label>
+                      </div>
+                      <div>
+                        <label className="block"><strong>Senha:</strong>
+                          <input 
+                            type="password" 
+                            value={newSenha} 
+                            onChange={(e) => setNewSenha(e.target.value)} 
+                            className="border rounded p-1 w-full"
+                          />
+                        </label>
+                      </div>
+                      <button 
+                        onClick={handleUpdateProfile} 
+                        className="bg-blue-500 text-white rounded px-4 py-2 hover:bg-blue-600"
+                      >
+                        Atualizar Perfil
+                      </button>
+                      <button 
+                        onClick={() => setEditing(false)} 
+                        className="bg-gray-500 text-white rounded px-4 py-2 hover:bg-gray-600"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  ) : (
                     <div className="space-y-4">
                       <div><strong>Nome:</strong> {clienteData.nome}</div>
                       <div><strong>CPF:</strong> {clienteData.cpf}</div>
                       <div><strong>Email:</strong> {clienteData.email}</div>
                       <div><strong>Telefone:</strong> {clienteData.telefone}</div>
                       <div><strong>Senha:</strong> <span>••••••••</span></div>
+                      <button 
+                        onClick={() => setEditing(true)} 
+                        className="bg-green-500 text-white rounded px-4 py-2 hover:bg-green-600"
+                      >
+                        Editar Perfil
+                      </button>
                     </div>
-                  ) : (
-                    <p className="text-gray-600">Carregando dados do cliente...</p>
                   )}
                 </section>
               )}

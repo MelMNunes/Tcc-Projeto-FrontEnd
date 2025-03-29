@@ -295,7 +295,7 @@ const LoginCadastro = () => {
               <button
                 type="button"
                 onClick={togglePasswordVisibility}
-                className="absolute right-3 top-3"
+                className="absolute text-black right-3 top-3"
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
