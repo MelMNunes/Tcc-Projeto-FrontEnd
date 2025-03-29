@@ -22,6 +22,7 @@ const FuncionariosPage = () => {
     telefone: string;
     cpf: string;
     senha: string;
+    tipoDeUsuario: string;
     proximasConsultas: Consulta[];
     historico: Consulta[];
   }
@@ -34,13 +35,19 @@ const FuncionariosPage = () => {
   const [agendamentos, setAgendamentos] = useState<
     { dia: string; consultas: Consulta[] }[]
   >([]);
-  const [passoAtual, setPassoAtual] = useState(0);
 
-  // Estados para envio de mensagem
+  // Estado para controle mensagem do WhatsApp
+  const [passoAtual, setPassoAtual] = useState(0);
   const [phone, setPhone] = useState<string>("");
   const [message, setMessage] = useState<string>("");
   const [sending, setSending] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Estado para controle de edição de perfil
+  const [editing, setEditing] = useState<boolean>(false);
+  const [newEmail, setNewEmail] = useState<string>("");
+  const [newTelefone, setNewTelefone] = useState<string>("");
+  const [newSenha, setNewSenha] = useState<string>("");
 
   useEffect(() => {
     const userDataString = localStorage.getItem("user");
@@ -64,6 +71,9 @@ const FuncionariosPage = () => {
     try {
       const data = await getUsuarioById(userId);
       setFuncionarioData(data);
+      setFuncionarioData(data);
+      setNewEmail(data.email); // Preenche o novo email com o atual
+      setNewTelefone(data.telefone); // Preenche o novo telefone com o atual
     } catch (error) {
       console.error("Erro ao buscar dados do funcionário:", error);
     } finally {
@@ -108,28 +118,57 @@ const FuncionariosPage = () => {
     }
   };
 
+  const handleUpdateProfile = async () => {
+    const userId = funcionarioData?.id;
+    if (!userId) return;
+
+    const response = await fetch(`http://localhost:8080/api/usuarios/editar/${userId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        nome: funcionarioData.nome,
+        email: newEmail,
+        telefone: newTelefone,
+        senha: newSenha, // Enviar nova senha se fornecida
+        tipoDeUsuario: funcionarioData.tipoDeUsuario, // Enviar o tipo de usuário
+      }),
+    });
+
+    if (response.ok) {
+      alert("Perfil atualizado com sucesso!");
+      fetchFuncionarioData(userId); // Recarrega os dados do cliente
+      setEditing(false); // Fecha o modo de edição
+    } else {
+      const errorMessage = await response.text();
+      alert("Erro ao atualizar perfil: " + errorMessage);
+    }
+  };
+
   const handleSendMessage = async () => {
     setSending(true);
     setError(null);
     try {
-      const response = await fetch('https://api.wali.chat/v1/messages', {
-        method: 'POST',
+      const response = await fetch("https://api.wali.chat/v1/messages", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Token': '0f2d95328f00d15bfadf10c0a45637cc44887b111f9af7fe2f9004ebd5b3c7d8f2c4359adf72b609', // Substitua pela sua chave de API
+          "Content-Type": "application/json",
+          Token:
+            "0f2d95328f00d15bfadf10c0a45637cc44887b111f9af7fe2f9004ebd5b3c7d8f2c4359adf72b609", // Substitua pela sua chave de API
         },
         body: JSON.stringify({ phone, message }),
       });
 
       if (!response.ok) {
-        throw new Error('Erro ao enviar mensagem: ' + response.statusText);
+        throw new Error("Erro ao enviar mensagem: " + response.statusText);
       }
 
       const data = await response.json();
-      alert('Mensagem enviada com sucesso: ' + data);
-      setMessage(''); // Limpa o campo de mensagem após o envio
-    } catch (err) {
-      setError('Erro ao enviar mensagem: ' + err.message);
+      alert("Mensagem enviada com sucesso: " + data);
+      setMessage(""); // Limpa o campo de mensagem após o envio
+    } catch (err: Error) {
+      setError("Erro ao enviar mensagem: " + err.message);
     } finally {
       setSending(false);
     }
@@ -191,7 +230,7 @@ const FuncionariosPage = () => {
               onClick={() => setSelectedTab("enviarMensagem")}
             >
               Enviar Mensagem
-              </li>
+            </li>
           </ul>
         </div>
         <button
@@ -249,7 +288,9 @@ const FuncionariosPage = () => {
                           }))
                         )
                         .sort(
-                          (a, b) => new Date(a.dataHora) - new Date(b.dataHora)
+                          (a, b) =>
+                            new Date(a.dataHora as string) -
+                            new Date(b.dataHora as string)
                         ) // Ordena por data e hora
                         .map((consulta) => (
                           <div
@@ -301,7 +342,60 @@ const FuncionariosPage = () => {
               {selectedTab === "perfil" && (
                 <section>
                   <h2 className="text-2xl font-semibold mb-4">Perfil</h2>
-                  {funcionarioData ? (
+                  {editing ? (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block">
+                          <strong>Nome:</strong> {funcionarioData.nome}
+                        </label>
+                      </div>
+                      <div>
+                        <label className="block">
+                          <strong>Email:</strong>
+                          <input
+                            type="email"
+                            value={newEmail}
+                            onChange={(e) => setNewEmail(e.target.value)}
+                            className="border rounded p-1 w-full"
+                          />
+                        </label>
+                      </div>
+                      <div>
+                        <label className="block">
+                          <strong>Telefone:</strong>
+                          <input
+                            type="text"
+                            value={newTelefone}
+                            onChange={(e) => setNewTelefone(e.target.value)}
+                            className="border rounded p-1 w-full"
+                          />
+                        </label>
+                      </div>
+                      <div>
+                        <label className="block">
+                          <strong>Senha:</strong>
+                          <input
+                            type="password"
+                            value={newSenha}
+                            onChange={(e) => setNewSenha(e.target.value)}
+                            className="border rounded p-1 w-full"
+                          />
+                        </label>
+                      </div>
+                      <button
+                        onClick={handleUpdateProfile}
+                        className="bg-blue-500 text-white rounded px-4 py-2 hover:bg-blue-600"
+                      >
+                        Atualizar Perfil
+                      </button>
+                      <button
+                        onClick={() => setEditing(false)}
+                        className="bg-gray-500 text-white rounded px-4 py-2 hover:bg-gray-600"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  ) : (
                     <div className="space-y-4">
                       <div>
                         <strong>Nome:</strong> {funcionarioData.nome}
@@ -318,11 +412,13 @@ const FuncionariosPage = () => {
                       <div>
                         <strong>Senha:</strong> <span>••••••••</span>
                       </div>
+                      <button
+                        onClick={() => setEditing(true)}
+                        className="bg-green-500 text-white rounded px-4 py-2 hover:bg-green-600"
+                      >
+                        Editar Perfil
+                      </button>
                     </div>
-                  ) : (
-                    <p className="text-gray-600">
-                      Carregando dados do funcionário...
-                    </p>
                   )}
                 </section>
               )}
@@ -330,7 +426,9 @@ const FuncionariosPage = () => {
               {/* Seção para enviar mensagem */}
               {selectedTab === "enviarMensagem" && (
                 <section>
-                  <h2 className="text-2xl font-semibold mb-4">Enviar Mensagem</h2>
+                  <h2 className="text-2xl font-semibold mb-4">
+                    Enviar Mensagem
+                  </h2>
                   <input
                     type="text"
                     placeholder="Número de telefone (ex: +551196777071)"
@@ -349,7 +447,7 @@ const FuncionariosPage = () => {
                     disabled={sending}
                     className="bg-blue-500 text-white p-2 rounded"
                   >
-                    {sending ? 'Enviando...' : 'Enviar Mensagem'}
+                    {sending ? "Enviando..." : "Enviar Mensagem"}
                   </button>
                   {error && <p className="text-red-500">{error}</p>}
                 </section>
