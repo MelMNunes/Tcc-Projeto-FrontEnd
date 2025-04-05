@@ -6,10 +6,16 @@ import React from "react";
 import LandingHeader from "./LandingHeader";
 import LandingFooter from "./LandingFooter";
 import Carrossel from "@/app/components/Carrossel";
+import Teste from "@/app/telas/anamnese/page";
 
 const LandingPage = () => {
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
+      
+      <div className="text-black">
+      <Teste />
+      </div>
+
       {/* Carrossel */}
       <Carrossel />
 

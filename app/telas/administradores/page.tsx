@@ -7,6 +7,9 @@ import UserModal from "@/app/telas/administradores/UserModal";
 interface Usuario {
   id: number;
   nome: string;
+  email: string;
+  telefone: string;
+  cpf: string;
   tipoDeUsuario?: string;
 }
 
@@ -30,6 +33,7 @@ const AdminPage = () => {
   const [adminData, setAdminData] = useState<AdminData | null>(null);
   const [adminPassword, setAdminPassword] = useState(""); // Estado para armazenar a senha digitada
   const [passwordError, setPasswordError] = useState(""); // Estado para armazenar erros de senha
+  // const [searchTerm] = useState<string>("");
 
   useEffect(() => {
     fetchUsers();
@@ -89,7 +93,7 @@ const AdminPage = () => {
     }
   };
 
-  const handleDeleteUser  = async (userId: number) => {
+  const handleDeleteUser = async (userId: number) => {
     try {
       const response = await fetch(
         `http://localhost:8080/api/usuarios/excluir/${userId}`,
@@ -118,8 +122,8 @@ const AdminPage = () => {
 
   const handlePasswordSubmit = () => {
     if (adminData && adminPassword === adminData.senha) {
-      setPasswordModalOpen(false);
-      router.push("/telas/recepcao"); // Redireciona para a tela de recepção
+      setPasswordModalOpen(true);
+      router.push("app/telas/recepcao/page"); // Redireciona para a tela de recepção
     } else {
       setPasswordError("Senha incorreta. Tente novamente."); // Exibe erro se a senha estiver incorreta
     }
@@ -140,16 +144,6 @@ const AdminPage = () => {
               onClick={() => setSelectedTab("usuarios")}
             >
               Gerenciar Usuários
-            </li>
-            <li
-              className={`p-2 rounded cursor-pointer ${
-                selectedTab === "financeiro"
-                  ? "bg-blue-500 text-white"
-                  : "hover:bg-gray-200"
-              }`}
-              onClick={() => setSelectedTab("financeiro")}
-            >
-              Controle Financeiro
             </li>
             <li
               className={`p-2 rounded cursor-pointer ${
@@ -220,8 +214,11 @@ const AdminPage = () => {
               {users.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {users
-                    .filter((user) =>
-                      user.nome.toLowerCase().includes(search.toLowerCase())
+                    .filter(
+                      (user) =>
+                        user.nome.toLowerCase().includes(search.toLowerCase()) ||
+                        user.cpf.includes(search) ||
+                        user.telefone.includes(search)
                     )
                     .map((user) => {
                       console.log("Usuário exibido:", user);
@@ -234,12 +231,22 @@ const AdminPage = () => {
                             <strong>Nome:</strong> {user.nome}
                           </p>
                           <p>
+                            <strong>Email:</strong> {user.email}
+                          </p>
+                          <p>
+                            <strong>Telefone:</strong>{" "}
+                            {user.telefone || "Não informado"}
+                          </p>
+                          <p>
+                            <strong>CPF:</strong> {user.cpf || "Não informado"}
+                          </p>
+                          <p>
                             <strong>Tipo:</strong>{" "}
                             {user.tipoDeUsuario || "Tipo não informado"}
                           </p>
                           <button
                             className="text-red-500 mt-2"
-                            onClick={() => handleDeleteUser (user.id)}
+                            onClick={() => handleDeleteUser(user.id)}
                           >
                             Excluir
                           </button>
@@ -252,16 +259,6 @@ const AdminPage = () => {
               )}
             </section>
           )}
-
-          {selectedTab === "financeiro" && (
-            <section>
-              <h2 className="text-2xl font-semibold mb-4">
-                Controle Financeiro
-              </h2>
-              <p className="text-gray-600">Em desenvolvimento...</p>
-            </section>
-          )}
-
           {selectedTab === "perfil" && (
             <section>
               <h2 className="text-2xl font-semibold mb-4">Perfil</h2>
@@ -277,14 +274,17 @@ const AdminPage = () => {
                     <strong>Email:</strong> {adminData.email}
                   </div>
                   <div>
-                    <strong>Telefone:</strong> {adminData.telefone || "Não informado"}
+                    <strong>Telefone:</strong>{" "}
+                    {adminData.telefone || "Não informado"}
                   </div>
                   <div>
                     <strong>Senha:</strong> <span>••••••••</span>
                   </div>
                 </div>
               ) : (
-                <p className="text-gray-600">Carregando dados do administrador...</p>
+                <p className="text-gray-600">
+                  Carregando dados do administrador...
+                </p>
               )}
             </section>
           )}
@@ -303,7 +303,9 @@ const AdminPage = () => {
       {passwordModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white p-6 rounded shadow-md">
-            <h2 className="text-lg font-semibold mb-4">Digite a Senha do Administrador</h2>
+            <h2 className="text-lg font-semibold mb-4">
+              Digite a Senha do Administrador
+            </h2>
             <input
               type="password"
               placeholder="Senha"

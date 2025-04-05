@@ -13,6 +13,7 @@ const FuncionariosPage = () => {
     dataHora: string;
     servicoNome: string;
     clienteNome: string;
+    descricao: string;
   }
 
   interface FuncionarioData {
@@ -27,6 +28,15 @@ const FuncionariosPage = () => {
     historico: Consulta[];
   }
 
+  interface Usuario {
+    id: number;
+    nome: string;
+    email: string;
+    cpf: string;
+    telefone: string;
+    tipoDeUsuario: string;
+  }
+
   const [nome, setNome] = useState<string>("");
   const [selectedTab, setSelectedTab] = useState("agendamento");
   const [funcionarioData, setFuncionarioData] =
@@ -35,6 +45,9 @@ const FuncionariosPage = () => {
   const [agendamentos, setAgendamentos] = useState<
     { dia: string; consultas: Consulta[] }[]
   >([]);
+  const [users, setUsers] = useState<Usuario[]>([]); // Estado para armazenar usuários
+  const [searchTerm, setSearchTerm] = useState<string>(""); // Estado para armazenar o termo de pesquisa
+  const [filter] = useState("CLIENTE");
 
   // Estado para controle mensagem do WhatsApp
   const [passoAtual, setPassoAtual] = useState(0);
@@ -60,6 +73,7 @@ const FuncionariosPage = () => {
         const userId = Number(localStorage.getItem("id"));
         fetchFuncionarioData(userId);
         fetchAgendamentos(userId);
+        fetchUsers(); // Chama a função para buscar usuários
       } catch (error) {
         console.error("Erro ao recuperar dados do funcionário:", error);
       }
@@ -70,7 +84,6 @@ const FuncionariosPage = () => {
     setLoading(true);
     try {
       const data = await getUsuarioById(userId);
-      setFuncionarioData(data);
       setFuncionarioData(data);
       setNewEmail(data.email); // Preenche o novo email com o atual
       setNewTelefone(data.telefone); // Preenche o novo telefone com o atual
@@ -118,23 +131,53 @@ const FuncionariosPage = () => {
     }
   };
 
+  const fetchUsers = async () => {
+    try {
+      let endpoint = "http://localhost:8080/api/usuarios/listar/todos";
+      if (filter !== "todos") {
+        endpoint = `http://localhost:8080/api/usuarios/listar/${filter}`;
+      }
+
+      const response = await fetch(endpoint, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        cache: "no-cache",
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro ao buscar usuários: ${response.status}`);
+      }
+
+      const data: Usuario[] = await response.json();
+      console.log("Usuários recebidos:", data);
+      setUsers(data);
+    } catch (error) {
+      console.error("Erro ao buscar usuários:", error);
+    }
+  };
+
   const handleUpdateProfile = async () => {
     const userId = funcionarioData?.id;
     if (!userId) return;
 
-    const response = await fetch(`http://localhost:8080/api/usuarios/editar/${userId}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        nome: funcionarioData.nome,
-        email: newEmail,
-        telefone: newTelefone,
-        senha: newSenha, // Enviar nova senha se fornecida
-        tipoDeUsuario: funcionarioData.tipoDeUsuario, // Enviar o tipo de usuário
-      }),
-    });
+    const response = await fetch(
+      `http://localhost:8080/api/usuarios/editar/${userId}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          nome: funcionarioData.nome,
+          email: newEmail,
+          telefone: newTelefone,
+          senha: newSenha, // Enviar nova senha se fornecida
+          tipoDeUsuario: funcionarioData.tipoDeUsuario, // Enviar o tipo de usuário
+        }),
+      }
+    );
 
     if (response.ok) {
       alert("Perfil atualizado com sucesso!");
@@ -173,6 +216,13 @@ const FuncionariosPage = () => {
       setSending(false);
     }
   };
+
+  // Filtra os usuários com base no termo de pesquisa
+  const filteredUsers = users.filter(user =>
+    user.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.cpf.includes(searchTerm) ||
+    user.telefone.includes(searchTerm)
+  );
 
   return (
     <div className="flex min-h-screen text-black bg-gray-100">
@@ -230,6 +280,17 @@ const FuncionariosPage = () => {
               onClick={() => setSelectedTab("enviarMensagem")}
             >
               Enviar Mensagem
+            </li>
+            {/* Nova aba para pesquisar clientes */}
+            <li
+              className={`p-2 rounded cursor-pointer ${
+                selectedTab === "pesquisarUsuarios"
+                  ? "bg-blue-500 text-white"
+                  : "hover:bg-gray-200"
+              }`}
+              onClick={() => setSelectedTab("pesquisarUsuarios")}
+            >
+              Pesquisar Clientes
             </li>
           </ul>
         </div>
@@ -319,6 +380,12 @@ const FuncionariosPage = () => {
                               <strong>Serviço:</strong>{" "}
                               {consulta.servicoNome || "Não informado"}
                             </p>
+                            {consulta.descricao && (
+                              <p>
+                                <strong>Comentário:</strong>{" "}
+                                {consulta.descricao}
+                              </p>
+                            )}
                           </div>
                         ))}
                     </div>
@@ -450,6 +517,35 @@ const FuncionariosPage = () => {
                     {sending ? "Enviando..." : "Enviar Mensagem"}
                   </button>
                   {error && <p className="text-red-500">{error}</p>}
+                </section>
+              )}
+
+              {/* Seção para pesquisar clientes */}
+              {selectedTab === "pesquisarUsuarios" && (
+                <section>
+                  <h2 className="text-2xl font-semibold mb-4">Pesquisar Clientes</h2>
+                  <input
+                    type="text"
+                    placeholder="Pesquisar pelo nome..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="border p-2 rounded mb-4 w-full"
+                  />
+                  {filteredUsers.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {filteredUsers.map((user) => (
+                        <div key={user.id} className="p-4 border rounded-lg shadow">
+                          <h3 className="text-xl font-semibold">{user.nome}</h3>
+                          <p><strong>Email:</strong> {user.email}</p>
+                          <p><strong>Telefone:</strong> {user.telefone}</p>
+                          <p><strong>CPF:</strong> {user.cpf}</p>
+                          <p><strong>Tipo de Usuário:</strong> {user.tipoDeUsuario}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-600">Nenhum cliente encontrado.</p>
+                  )}
                 </section>
               )}
             </>

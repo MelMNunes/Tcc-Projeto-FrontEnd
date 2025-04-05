@@ -70,7 +70,15 @@ const ClientesPage = () => {
         `http://localhost:8080/api/agendamentos/clientes/${userId}`
       );
       const data = await response.json();
-      setAgendamentos(data);
+  
+      // Ordenar os agendamentos por data e hora
+      const sortedAgendamentos = data.sort((a: Consulta, b: Consulta) => {
+        const dateA = new Date(a.dataHora);
+        const dateB = new Date(b.dataHora);
+        return dateA.getTime() - dateB.getTime(); // Ordena em ordem crescente
+      });
+  
+      setAgendamentos(sortedAgendamentos);
     } catch (error) {
       console.error("Erro ao buscar agendamentos:", error);
     }
@@ -133,12 +141,6 @@ const ClientesPage = () => {
             >
               Próximas Consultas
             </li>
-            {/* <li
-              className={`p-2 rounded cursor-pointer ${selectedTab === "historico" ? "bg-blue-500 text-white" : "hover:bg-gray-200"}`}
-              onClick={() => setSelectedTab("historico")}
-            >
-              Histórico
-            </li> */}
             <li
               className={`p-2 rounded cursor-pointer ${
                 selectedTab === "perfil"
