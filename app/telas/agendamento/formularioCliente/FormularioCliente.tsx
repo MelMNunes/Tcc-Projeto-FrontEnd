@@ -75,11 +75,22 @@ const FormularioAgendamento: React.FC<{ clienteId: number }> = ({
         const response = await fetch(
           `http://localhost:8080/api/agendamentos/disponiveis?data=${detalhesAgendamento.data}&funcionarioId=${detalhesAgendamento.funcionarioId}`
         );
-        const ocupados: string[] = await response.json();
+        const dados = await response.json();
+        console.log("Resposta da API (disponíveis):", dados);
+        const ocupados: string[] = Array.isArray(dados)
+        ? dados
+        : dados?.horariosOcupados ?? [];
+      
+      if (!Array.isArray(ocupados)) {
+        console.warn("Formato inesperado de horários ocupados:", dados);
+        return;
+      }
+      
+      const horariosFiltrados = horariosFixos.filter(
+        (hora) => !ocupados.includes(hora)
+      );
+      
 
-        const horariosFiltrados = horariosFixos.filter(
-          (hora) => !ocupados.includes(hora)
-        );
         setHorariosDisponiveis(horariosFiltrados);
       } catch (err) {
         console.error("Erro ao buscar horários ocupados:", err);
@@ -89,16 +100,34 @@ const FormularioAgendamento: React.FC<{ clienteId: number }> = ({
     buscarHorariosDisponiveis();
   }, [detalhesAgendamento.data, detalhesAgendamento.funcionarioId]);
 
-  const avancarPasso = () => {
+  const avancarPasso = async () => {
     if (passoAtual === 0 && detalhesAgendamento.funcionarioId === null)
       return alert("Escolha um funcionário");
     if (passoAtual === 1 && detalhesAgendamento.servicoId === null)
       return alert("Escolha um serviço");
-    if (
-      passoAtual === 2 &&
-      (!detalhesAgendamento.data || !detalhesAgendamento.horario)
-    )
-      return alert("Escolha data e horário");
+
+    if (passoAtual === 2) {
+      if (!detalhesAgendamento.data || !detalhesAgendamento.horario)
+        return alert("Escolha data e horário");
+
+      try {
+        const response = await fetch(
+          `http://localhost:8080/api/agendamentos/disponiveis?data=${detalhesAgendamento.data}&funcionarioId=${detalhesAgendamento.funcionarioId}`
+        );
+        const dados = await response.json();
+        const ocupados: string[] = Array.isArray(dados) ? dados : dados.horariosOcupados;
+        
+        if (ocupados.includes(detalhesAgendamento.horario)) {
+        
+          return alert(
+            `O horário ${detalhesAgendamento.horario} no dia ${detalhesAgendamento.data} já está ocupado. Por favor, escolha outro.`
+          );
+        }
+      } catch (err) {
+        console.error("Erro ao verificar horário:", err);
+        return alert("Erro ao verificar disponibilidade do horário.");
+      }
+    }
 
     setPassoAtual((prev) => prev + 1);
   };
@@ -192,55 +221,70 @@ const FormularioAgendamento: React.FC<{ clienteId: number }> = ({
         </div>
       )}
 
-{passoAtual === 2 && (
-  <div>
-    <h2 className="text-xl font-semibold mb-2">Escolha a Data</h2>
+      {passoAtual === 2 && (
+        <div>
+          <h2 className="text-xl font-semibold mb-2">Escolha a Data</h2>
 
-    <DatePicker
-      selected={
-        detalhesAgendamento.data
-          ? new Date(detalhesAgendamento.data)
-          : null
-      }
-      onChange={(date: Date | null) => {
-        if (!date) return;
-        const dataFormatada = date.toISOString().split("T")[0];
-        setDetalhesAgendamento({
-          ...detalhesAgendamento,
-          data: dataFormatada,
-        });
-      }}
-      className="w-full p-2 border rounded-lg"
-      dateFormat="dd/MM/yyyy"
-      minDate={new Date()}
-      placeholderText="Selecione uma data"
-    />
+          <DatePicker
+            selected={
+              detalhesAgendamento.data
+                ? new Date(detalhesAgendamento.data)
+                : null
+            }
+            onChange={(date: Date | null) => {
+              if (!date) return;
+              const dataFormatada = date.toISOString().split("T")[0];
+              setDetalhesAgendamento({
+                ...detalhesAgendamento,
+                data: dataFormatada,
+              });
+            }}
+            className="w-full p-2 border rounded-lg"
+            dateFormat="dd/MM/yyyy"
+            minDate={new Date()}
+            placeholderText="Selecione uma data"
+          />
 
-    {detalhesAgendamento.data && (
-      <>
-        <h3 className="text-lg font-semibold mt-4 mb-2">
-          Horários disponíveis
-        </h3>
-        <div className="grid grid-cols-5 gap-2">
-          {[
-            "09:00", "09:50", "10:40", "11:30",
-            "13:00", "13:50", "14:40", "15:30", "16:20", "17:10"
-          ].map((hora) => (
-            <button
-              key={hora}
-              className="p-2 border rounded-lg bg-gray-100 hover:bg-blue-100 transition"
-            >
-              {hora}
-            </button>
-          ))}
+          {detalhesAgendamento.data && (
+            <>
+              <h3 className="text-lg font-semibold mt-4 mb-2">
+                Horários disponíveis
+              </h3>
+              <div className="grid grid-cols-5 gap-2">
+                {[
+                  "09:00",
+                  "09:50",
+                  "10:40",
+                  "11:30",
+                  "13:00",
+                  "13:50",
+                  "14:40",
+                  "15:30",
+                  "16:20",
+                  "17:10",
+                ].map((hora) => (
+                  <button
+                    key={hora}
+                    className={`p-2 border rounded-lg transition ${
+                      detalhesAgendamento.horario === hora
+                        ? "bg-blue-500 text-white"
+                        : "bg-gray-100 hover:bg-blue-100"
+                    }`}
+                    onClick={() =>
+                      setDetalhesAgendamento({
+                        ...detalhesAgendamento,
+                        horario: hora,
+                      })
+                    }
+                  >
+                    {hora}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
-      </>
-    )}
-  </div>
-)}
-
-
-
+      )}
 
       {passoAtual === 3 && (
         <div>
