@@ -48,6 +48,9 @@ const FuncionariosPage = () => {
   const [users, setUsers] = useState<Usuario[]>([]); // Estado para armazenar usuários
   const [searchTerm, setSearchTerm] = useState<string>(""); // Estado para armazenar o termo de pesquisa
   const [filter] = useState("CLIENTE");
+  const [expandedConsultaId, setExpandedConsultaId] = useState<number | null>(
+    null
+  );
 
   // Estado para controle mensagem do WhatsApp
   const [passoAtual, setPassoAtual] = useState(0);
@@ -99,31 +102,31 @@ const FuncionariosPage = () => {
       // Buscar os agendamentos do funcionário pelo ID
       const data: Consulta[] = await getAgendamentosByFuncionarioId(userId);
       console.log("Agendamentos buscados da API:", data); // Log para debug
-  
+
       // Verificar se os dados retornados são válidos
       if (!data || !Array.isArray(data)) {
         console.error("Erro: os dados não são uma lista válida:", data);
         return; // Encerra a função se os dados forem inválidos
       }
-  
+
       // Organizar os agendamentos por dia
       const agendamentosPorDia: { [key: string]: Consulta[] } = {};
-  
+
       data.forEach((consulta) => {
         const dataDia = new Date(consulta.dataHora).toLocaleDateString();
-  
+
         if (!agendamentosPorDia[dataDia]) {
           agendamentosPorDia[dataDia] = [];
         }
-  
+
         agendamentosPorDia[dataDia].push(consulta);
       });
-  
+
       // Ordenar os dias em ordem crescente
       const diasOrdenados = Object.keys(agendamentosPorDia).sort(
         (a, b) => new Date(a).getTime() - new Date(b).getTime()
       );
-  
+
       // Ordenar os agendamentos dentro de cada dia
       const agendamentosOrdenados = diasOrdenados.map((dia) => {
         return {
@@ -134,14 +137,13 @@ const FuncionariosPage = () => {
           ),
         };
       });
-  
+
       // Atualizar o estado com os agendamentos organizados
       setAgendamentos(agendamentosOrdenados);
     } catch (error) {
       console.error("Erro ao buscar agendamentos:", error);
     }
   };
-  
 
   const fetchUsers = async () => {
     try {
@@ -230,10 +232,11 @@ const FuncionariosPage = () => {
   };
 
   // Filtra os usuários com base no termo de pesquisa
-  const filteredUsers = users.filter(user =>
-    user.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.cpf.includes(searchTerm) ||
-    user.telefone.includes(searchTerm)
+  const filteredUsers = users.filter(
+    (user) =>
+      user.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.cpf.includes(searchTerm) ||
+      user.telefone.includes(searchTerm)
   );
 
   return (
@@ -398,6 +401,34 @@ const FuncionariosPage = () => {
                                 {consulta.descricao}
                               </p>
                             )}
+
+                            {/* Botão "Ver Mais" */}
+                            <button
+                              onClick={() =>
+                                setExpandedConsultaId(
+                                  expandedConsultaId === consulta.id
+                                    ? null
+                                    : consulta.id
+                                )
+                              }
+                              className="mt-2 bg-blue-500 text-white rounded px-2 py-1"
+                            >
+                              {expandedConsultaId === consulta.id
+                                ? "Ver Menos"
+                                : "Ver Mais"}
+                            </button>
+
+                            {/* Se a consulta está expandida, mostrar os botões adicionais */}
+                            {expandedConsultaId === consulta.id && (
+                              <div className="mt-2">
+                                <button className="bg-green-500 text-white rounded px-2 py-1 mr-2">
+                                  Fazer Anamnese
+                                </button>
+                                <button className="bg-yellow-500 text-white rounded px-2 py-1">
+                                  Consulta Realizada
+                                </button>
+                              </div>
+                            )}
                           </div>
                         ))}
                     </div>
@@ -408,7 +439,6 @@ const FuncionariosPage = () => {
                   )}
                 </section>
               )}
-
               {selectedTab === "historico" && (
                 <section>
                   <h2 className="text-2xl font-semibold mb-4">Histórico</h2>
@@ -535,7 +565,9 @@ const FuncionariosPage = () => {
               {/* Seção para pesquisar clientes */}
               {selectedTab === "pesquisarUsuarios" && (
                 <section>
-                  <h2 className="text-2xl font-semibold mb-4">Pesquisar Clientes</h2>
+                  <h2 className="text-2xl font-semibold mb-4">
+                    Pesquisar Clientes
+                  </h2>
                   <input
                     type="text"
                     placeholder="Pesquisar pelo nome..."
@@ -546,12 +578,24 @@ const FuncionariosPage = () => {
                   {filteredUsers.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                       {filteredUsers.map((user) => (
-                        <div key={user.id} className="p-4 border rounded-lg shadow">
+                        <div
+                          key={user.id}
+                          className="p-4 border rounded-lg shadow"
+                        >
                           <h3 className="text-xl font-semibold">{user.nome}</h3>
-                          <p><strong>Email:</strong> {user.email}</p>
-                          <p><strong>Telefone:</strong> {user.telefone}</p>
-                          <p><strong>CPF:</strong> {user.cpf}</p>
-                          <p><strong>Tipo de Usuário:</strong> {user.tipoDeUsuario}</p>
+                          <p>
+                            <strong>Email:</strong> {user.email}
+                          </p>
+                          <p>
+                            <strong>Telefone:</strong> {user.telefone}
+                          </p>
+                          <p>
+                            <strong>CPF:</strong> {user.cpf}
+                          </p>
+                          <p>
+                            <strong>Tipo de Usuário:</strong>{" "}
+                            {user.tipoDeUsuario}
+                          </p>
                         </div>
                       ))}
                     </div>
