@@ -96,24 +96,34 @@ const FuncionariosPage = () => {
 
   const fetchAgendamentos = async (userId: number) => {
     try {
+      // Buscar os agendamentos do funcionário pelo ID
       const data: Consulta[] = await getAgendamentosByFuncionarioId(userId);
-
+      console.log("Agendamentos buscados da API:", data); // Log para debug
+  
+      // Verificar se os dados retornados são válidos
+      if (!data || !Array.isArray(data)) {
+        console.error("Erro: os dados não são uma lista válida:", data);
+        return; // Encerra a função se os dados forem inválidos
+      }
+  
+      // Organizar os agendamentos por dia
       const agendamentosPorDia: { [key: string]: Consulta[] } = {};
-
+  
       data.forEach((consulta) => {
         const dataDia = new Date(consulta.dataHora).toLocaleDateString();
-
+  
         if (!agendamentosPorDia[dataDia]) {
           agendamentosPorDia[dataDia] = [];
         }
+  
         agendamentosPorDia[dataDia].push(consulta);
       });
-
-      // Ordenar os dias
+  
+      // Ordenar os dias em ordem crescente
       const diasOrdenados = Object.keys(agendamentosPorDia).sort(
         (a, b) => new Date(a).getTime() - new Date(b).getTime()
       );
-
+  
       // Ordenar os agendamentos dentro de cada dia
       const agendamentosOrdenados = diasOrdenados.map((dia) => {
         return {
@@ -124,12 +134,14 @@ const FuncionariosPage = () => {
           ),
         };
       });
-
+  
+      // Atualizar o estado com os agendamentos organizados
       setAgendamentos(agendamentosOrdenados);
     } catch (error) {
       console.error("Erro ao buscar agendamentos:", error);
     }
   };
+  
 
   const fetchUsers = async () => {
     try {

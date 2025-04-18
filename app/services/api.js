@@ -44,14 +44,13 @@ export const getAgendamentosByClienteId = async (clienteId) => {
 
 
 export const getAgendamentosByFuncionarioId = async (funcionarioId) => {
-  try {
-    console.log("Chamando API:", `/agendamentos/clientes/${funcionarioId}`);
-    const response = await api.get(`/agendamentos/funcionarios/${funcionarioId}`);
-    return response.data; // Retorna os dados diretamente
-  } catch (error) {
-    console.error("Erro ao buscar agendamentos:", error);
-    throw error;
+  const response = await fetch(`http://localhost:8080/api/agendamentos/funcionarios/${funcionarioId}`);
+  console.log("API Response:", response); // Log the API response
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch appointments');
   }
+  return await response.json();
 };
 
 export default api;

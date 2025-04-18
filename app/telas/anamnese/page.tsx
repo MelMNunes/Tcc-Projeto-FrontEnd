@@ -1,6 +1,10 @@
 // pages/anamnese/page.tsx
 import React, { useState, useEffect } from 'react';
 
+interface AnamnesePageProps {
+  agendamentoId: number;
+}
+
 const AnamnesePage: React.FC = () => {
   const [dataRegistro, setDataRegistro] = useState('');
   const [idade, setIdade] = useState('');
@@ -48,33 +52,6 @@ const AnamnesePage: React.FC = () => {
     setDataRegistro(formattedDate);
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Aqui você pode enviar os dados para a API ou processá-los conforme necessário
-    console.log({
-      dataRegistro,
-      idade,
-      genero,
-      queixaPrincipal,
-      tempoProblema,
-      tratamentoAnterior,
-      historia,
-      doencas,
-      outraDoenca,
-      cirurgiaRecente,
-      alergia,
-      medicamentos,
-      produtos,
-      materiais,
-      historicoFamiliar,
-      historicoFamiliarEspecificar,
-      habitos,
-      saudePes,
-      avaliacao,
-      anexos,
-    });
-  };
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const filesArray = Array.from(e.target.files);
@@ -85,6 +62,53 @@ const AnamnesePage: React.FC = () => {
   const handleRemoveFile = (index: number) => {
     setAnexos((prevAnexos) => prevAnexos.filter((_, i) => i !== index));
   };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const anamneseData = {
+        agendamentoId: {agendamentoId}, // Substitua pelo ID do agendamento real
+        dataRegistro,
+        idade: parseInt(idade),
+        genero,
+        queixaPrincipal,
+        tempoProblema,
+        tratamentoAnterior,
+        historia,
+        doencas: doencas.join(','), // Converte o array de doenças em uma string
+        outraDoenca,
+        cirurgiaRecente,
+        alergia,
+        medicamentos,
+        produtos,
+        materiais,
+        historicoFamiliar,
+        historicoFamiliarEspecificar,
+        habitos: JSON.stringify(habitos), // Converte o objeto de hábitos em uma string JSON
+        saudePes: JSON.stringify(saudePes), // Converte o objeto de saúde dos pés em uma string JSON
+        avaliacao: JSON.stringify(avaliacao), // Converte o objeto de avaliação em uma string JSON
+    };
+
+    try {
+        const response = await fetch('http://localhost:8080/api/anamnese/criar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(anamneseData),
+        });
+
+        if (!response.ok) {
+            throw new Error('Erro ao salvar a anamnese');
+        }
+
+        const result = await response.json();
+        console.log('Anamnese salva com sucesso:', result);
+        // Aqui você pode adicionar lógica para redirecionar ou mostrar uma mensagem de sucesso
+    } catch (error) {
+        console.error('Erro ao enviar anamnese:', error);
+    }
+};
 
   return (
     <div className="p-8 bg-white rounded shadow-md max-w-2xl mx-auto">

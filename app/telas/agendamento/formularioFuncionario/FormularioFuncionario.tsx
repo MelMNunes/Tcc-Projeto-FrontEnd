@@ -1,5 +1,6 @@
 import { Dispatch, SetStateAction, useState, useEffect } from "react";
 import ModalConfirmacao from "../components/ModalConfirmacao";
+// import CalendarioFuncionario from "./CalendarioFuncionario";
 
 interface Agendamento {
   id: number;
@@ -14,6 +15,10 @@ interface Agendamento {
 interface Cliente {
   id: number;
   nome: string;
+  email: string;
+  telefone: string;
+  cpf: string;
+  tipoDeUsuario: string;
 }
 
 interface Funcionario {
@@ -41,6 +46,9 @@ const FormularioAgendamentoFuncionario: React.FC<
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
   const [servicos, setServicos] = useState<Servico[]>([]);
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [filteredClientes, setFilteredClientes] = useState<Cliente[]>([]);
+  const [selectedClienteId, setSelectedClienteId] = useState<number | null>(null);
   const [detalhesAgendamento, setDetalhesAgendamento] = useState({
     servicoId: agendamento?.servicoId ?? null,
     clienteId: agendamento?.clienteId ?? null,
@@ -75,6 +83,26 @@ const FormularioAgendamentoFuncionario: React.FC<
       .catch((err) => console.error("Erro ao carregar serviços:", err));
   }, []);
 
+  useEffect(() => {
+    // Carregar clientes
+    fetch("http://localhost:8080/api/usuarios/listar/CLIENTE")
+      .then((res) => res.json())
+      .then(setClientes)
+      .catch((err) => console.error("Erro ao carregar clientes:", err));
+  }, []);
+
+  useEffect(() => {
+    if (searchTerm === "") {
+      setFilteredClientes(clientes);
+    } else {
+      setFilteredClientes(
+        clientes.filter((cliente) =>
+          cliente.nome.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      );
+    }
+  }, [searchTerm, clientes]);
+
   const avancarPasso = () => {
     if (passoAtual === 0 && !detalhesAgendamento.servicoId) {
       alert("Por favor, selecione um serviço antes de continuar.");
@@ -106,6 +134,7 @@ const FormularioAgendamentoFuncionario: React.FC<
   };
 
   const handleClienteChange = (clienteId: number) => {
+    setSelectedClienteId(clienteId); 
     setDetalhesAgendamento((prev) => ({
       ...prev,
       clienteId,
@@ -193,18 +222,61 @@ const FormularioAgendamentoFuncionario: React.FC<
       {passoAtual === 1 && (
         <div>
           <h2 className="text-2xl font-semibold mb-4">Escolha o Cliente</h2>
-          <select
-            className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={detalhesAgendamento.clienteId ?? ""}
-            onChange={(e) => handleClienteChange(Number(e.target.value))}
-          >
-            <option value="">Selecione um cliente</option>
-            {clientes.map((cliente) => (
-              <option key={cliente.id} value={cliente.id}>
-                {cliente.nome}
-              </option>
-            ))}
-          </select>
+
+          {/* Barra de pesquisa */}
+          <input
+            type="text"
+            placeholder="Pesquisar pelo nome..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="border p-2 rounded mb-4 w-full"
+          />
+
+          {/* Lista de clientes filtrados */}
+          {filteredClientes.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredClientes.map((cliente) => (
+                <div
+                  key={cliente.id}
+                  className={`p-4 border rounded-lg shadow cursor-pointer ${
+                    selectedClienteId === cliente.id
+                      ? "bg-blue-200" // Cliente selecionado
+                      : "hover:bg-blue-100"
+                  }`}
+                  onClick={() => handleClienteChange(cliente.id)} // Seleção do cliente
+                >
+                  <h3 className="text-xl font-semibold">{cliente.nome}</h3>
+                  <p>
+                    <strong>Email:</strong> {cliente.email}
+                  </p>
+                  <p>
+                    <strong>Telefone:</strong> {cliente.telefone}
+                  </p>
+                  <p>
+                    <strong>CPF:</strong> {cliente.cpf}
+                  </p>
+                  <p>
+                    <strong>Tipo de Usuário:</strong> {cliente.tipoDeUsuario}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-600">Nenhum cliente encontrado.</p>
+          )}
+
+          {/* Exibição do nome do cliente selecionado */}
+          {selectedClienteId && (
+            <div className="mt-4">
+              <h3 className="text-lg font-semibold">Cliente Selecionado:</h3>
+              <p>
+                {
+                  clientes.find((cliente) => cliente.id === selectedClienteId)
+                    ?.nome
+                }
+              </p>
+            </div>
+          )}
         </div>
       )}
 
@@ -219,6 +291,7 @@ const FormularioAgendamentoFuncionario: React.FC<
               setDetalhesAgendamento((prev) => ({
                 ...prev,
                 data: e.target.value,
+                horario: "", // Resetar horário ao mudar a data
               }))
             }
           />
@@ -228,17 +301,33 @@ const FormularioAgendamentoFuncionario: React.FC<
       {passoAtual === 3 && (
         <div>
           <h2 className="text-2xl font-semibold mb-4">Escolha o Horário</h2>
-          <input
-            type="time"
-            className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={detalhesAgendamento.horario}
-            onChange={(e) =>
-              setDetalhesAgendamento((prev) => ({
-                ...prev,
-                horario: e.target.value,
-              }))
-            }
-          />
+
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              "09:00",
+              "09:50",
+              "10:40",
+              "13:00",
+              "13:50",
+              "14:40",
+              "15:30",
+              "16:20",
+            ].map((hora) => (
+              <button
+                key={hora}
+                className={`p-2 rounded-lg border text-center ${
+                  detalhesAgendamento.horario === hora
+                    ? "bg-blue-500 text-white"
+                    : "bg-gray-100 hover:bg-blue-100"
+                }`}
+                onClick={() =>
+                  setDetalhesAgendamento((prev) => ({ ...prev, horario: hora }))
+                }
+              >
+                {hora}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
