@@ -6,6 +6,8 @@ import {
   getUsuarioById,
   getAgendamentosByFuncionarioId,
 } from "@/app/services/api";
+import { useRouter } from "next/navigation";
+import Modal from "@/components/Modal";
 
 const FuncionariosPage = () => {
   interface Consulta {
@@ -51,6 +53,8 @@ const FuncionariosPage = () => {
   const [expandedConsultaId, setExpandedConsultaId] = useState<number | null>(
     null
   );
+  const router = useRouter();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Estado para controle mensagem do WhatsApp
   const [passoAtual, setPassoAtual] = useState(0);
@@ -360,14 +364,14 @@ const FuncionariosPage = () => {
                         .flatMap((grupo) =>
                           grupo.consultas.map((consulta) => ({
                             ...consulta,
-                            dia: grupo.dia, // Adiciona o dia à consulta
+                            dia: grupo.dia,
                           }))
                         )
                         .sort(
                           (a, b) =>
                             new Date(a.dataHora as string) -
                             new Date(b.dataHora as string)
-                        ) // Ordena por data e hora
+                        )
                         .map((consulta) => (
                           <div
                             key={consulta.id}
@@ -421,7 +425,10 @@ const FuncionariosPage = () => {
                             {/* Se a consulta está expandida, mostrar os botões adicionais */}
                             {expandedConsultaId === consulta.id && (
                               <div className="mt-2">
-                                <button className="bg-green-500 text-white rounded px-2 py-1 mr-2">
+                                <button
+                                  onClick={() => setIsModalOpen(true)} // Abre o modal ao clicar
+                                  className="bg-green-500 text-white rounded px-2 py-1 mr-2"
+                                >
                                   Fazer Anamnese
                                 </button>
                                 <button className="bg-yellow-500 text-white rounded px-2 py-1">
@@ -439,6 +446,7 @@ const FuncionariosPage = () => {
                   )}
                 </section>
               )}
+
               {selectedTab === "historico" && (
                 <section>
                   <h2 className="text-2xl font-semibold mb-4">Histórico</h2>
@@ -604,6 +612,410 @@ const FuncionariosPage = () => {
                   )}
                 </section>
               )}
+            </>
+          )}
+                        {/* Modal para o formulário de anamnese */}
+                        <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+                <h2 className="text-2xl font-semibold mb-4 text-center">Formulário de Anamnese</h2>
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  {/* Dados do Cliente */}
+                  <div>
+                    <label className="block mb-2">Data de Registro:</label>
+                    <input
+                      type="date"
+                      value={dataRegistro}
+                      onChange={(e) => setDataRegistro(e.target.value)}
+                      className="border rounded p-2 w-full"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-2">Idade:</label>
+                    <input
+                      type="number"
+                      value={idade}
+                      onChange={(e) => setIdade(e.target.value)}
+                      className="border rounded p-2 w-full"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-2">Gênero:</label>
+                    <select
+                      value={genero}
+                      onChange={(e) => setGenero(e.target.value)}
+                      className="border rounded p-2 w-full"
+                      required
+                    >
+                      <option value="">Selecione</option>
+                      <option value="masculino">Masculino</option>
+                      <option value="feminino">Feminino</option>
+                      <option value="outro">Outro</option>
+                    </select>
+                  </div>
+
+                  {/* Informações do Cliente */}
+                  <h3 className="text-xl font-semibold mt-6">Informações do Cliente</h3>
+                  <div>
+                    <label className="block mb-2">Queixa Principal:</label>
+                    <input
+                      type="text"
+                      value={queixaPrincipal}
+                      onChange={(e) => setQueixaPrincipal(e.target.value)}
+                      className="border rounded p-2 w-full"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-2">Há quanto tempo está com esse problema?</label>
+                    <input
+                      type="text"
+                      value={tempoProblema}
+                      onChange={(e) => setTempoProblema(e.target.value)}
+                      className="border rounded p-2 w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-2">Já fez algum tratamento antes? Qual?</label>
+                    <input
+                      type="text"
+                      value={tratamentoAnterior}
+                      onChange={(e) => setTratamentoAnterior(e.target.value)}
+                      className="border rounded p-2 w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-2">História:</label>
+                    <textarea
+                      value={historia}
+                      onChange={(e) => setHistoria(e.target.value)}
+                      className="border rounded p-2 w-full h-32"
+                      required
+                    />
+                  </div>
+
+                  {/* Doenças */}
+                  <div>
+                    <label className="block mb-2">Possui alguma doença diagnosticada?</label>
+                    <select
+                      multiple
+                      value={doencas}
+                      onChange={(e) => {
+                        const options = e.target.options;
+                        const selected = [];
+                        for (let i = 0; i < options.length; i++) {
+                          if (options[i].selected) {
+                            selected.push(options[i].value);
+                          }
+                        }
+                        setDoencas(selected);
+                      }}
+                      className="border rounded p-2 w-full"
+                    >
+                      <option value="diabetes">Diabetes</option>
+                      <option value="hipertensao">Hipertensão</option>
+                      <option value="doenca_vascular">Doença Vascular</option>
+                      <option value="outra">Outra</option>
+                    </select>
+                    {doencas.includes('outra') && (
+                      <input
+                        type="text"
+                        placeholder="Especifique"
+                        value={outraDoenca}
+                        onChange={(e) => setOutraDoenca(e.target.value)}
+                        className="border rounded p-2 w-full mt-2"
+                      />
+                    )}
+                  </div>
+                  <div>
+                    <label className="block mb-2">Já passou por cirurgias?</label>
+                    <select
+                      value={cirurgiaRecente}
+                      onChange={(e) => setCirurgiaRecente(e.target.value)}
+                      className="border rounded p-2 w-full"
+                    >
+                      <option value="sim">Sim</option>
+                      <option value="nao">Não</option>
+                    </select>
+                    {cirurgiaRecente === 'sim' && (
+                      <input
+                        type="text"
+                        placeholder="Especifique"
+                        className="border rounded p-2 w-full mt-2"
+                      />
+                    )}
+                  </div>
+                  <div>
+                    <label className="block mb-2">Possui alergias?</label>
+                    <select
+                      value={alergia}
+                      onChange={(e) => setAlergia(e.target.value)}
+                      className="border rounded p-2 w-full"
+                    >
+                      <option value="sim">Sim</option>
+                      <option value="nao">Não</option>
+                    </select>
+                    {alergia === 'sim' && (
+                      <div className="space-y-2 mt-2">
+                        <input
+                          type="text"
+                          placeholder="Medicamentos"
+                          value={medicamentos}
+                          onChange={(e) => setMedicamentos(e.target.value)}
+                          className="border rounded p-2 w-full"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Produtos"
+                          value={produtos}
+                          onChange={(e) => setProdutos(e.target.value)}
+                          className="border rounded p-2 w-full"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Materiais"
+                          value={materiais}
+                          onChange={(e) => setMateriais(e.target.value)}
+                          className="border rounded p-2 w-full"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block mb-2">Histórico familiar de doenças?</label>
+                    <select
+                      value={historicoFamiliar}
+                      onChange={(e) => setHistoricoFamiliar(e.target.value)}
+                      className="border rounded p-2 w-full"
+                    >
+                      <option value="sim">Sim</option>
+                      <option value="nao">Não</option>
+                    </select>
+                    {historicoFamiliar === 'sim' && (
+                      <input
+                        type="text"
+                        placeholder="Especifique"
+                        value={historicoFamiliarEspecificar}
+                        onChange={(e) => setHistoricoFamiliarEspecificar(e.target.value)}
+                        className="border rounded p-2 w-full mt-2"
+                      />
+                    )}
+                  </div>
+
+                  {/* Hábitos do Cliente */}
+                  <h3 className="text-xl font-semibold mt-6">Hábitos do Cliente</h3>
+                  <div>
+                    <label className="block mb-2">Pratica atividades físicas?</label>
+                    <select
+                      value={habitos.atividadeFisica}
+                      onChange={(e) => setHabitos({ ...habitos, atividadeFisica: e.target.value })}
+                      className="border rounded p-2 w-full"
+                    >
+                      <option value="sim">Sim</option>
+                      <option value="nao">Não</option>
+                    </select>
+                    {habitos.atividadeFisica === 'sim' && (
+                      <input
+                        type="text"
+                        placeholder="Quais?"
+                        className="border rounded p-2 w-full mt-2"
+                      />
+                    )}
+                  </div>
+                  <div>
+                    <label className="block mb-2">Consome álcool?</label>
+                    <select
+                      value={habitos.consomeAlcool}
+                      onChange={(e) => setHabitos({ ...habitos, consomeAlcool: e.target.value })}
+                      className="border rounded p-2 w-full"
+                    >
+                      <option value="sim">Sim</option>
+                      <option value="nao">Não</option>
+                    </select>
+                    <div>
+                    <label className="block mb-2">Fuma?</label>
+                    <select
+                      value={habitos.fuma}
+                      onChange={(e) => setHabitos({ ...habitos, fuma: e.target.value })}
+                      className="border rounded p-2 w-full"
+                    >
+                      <option value="sim">Sim</option>
+                      <option value="nao">Não</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block mb-2">Nível de estresse:</label>
+                    <select
+                      value={habitos.nivelEstresse}
+                      onChange={(e) => setHabitos({ ...habitos, nivelEstresse: e.target.value })}
+                      className="border rounded p-2 w-full"
+                    >
+                      <option value="">Selecione</option>
+                      <option value="baixo">Baixo</option>
+                      <option value="medio">Médio</option>
+                      <option value="alto">Alto</option>
+                    </select>
+                  </div>
+
+                  {/* Saúde dos Pés */}
+                  <h3 className="text-xl font-semibold mt-6">Saúde dos Pés</h3>
+                  <div>
+                    <label className="block mb-2">Sente dor nos pés? Em qual região?</label>
+                    <input
+                      type="text"
+                      value={saudePes.dorPes}
+                      onChange={(e) => setSaudePes({ ...saudePes, dorPes: e.target.value })}
+                      className="border rounded p-2 w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-2">Já teve calos, rachaduras, micoses ou verrugas plantares?</label>
+                    <select
+                      value={saudePes.calos}
+                      onChange={(e) => setSaudePes({ ...saudePes, calos: e.target.value })}
+                      className="border rounded p-2 w-full"
+                    >
+                      <option value="sim">Sim</option>
+                      <option value="nao">Não</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block mb-2">Possui unhas encravadas ou deformadas?</label>
+                    <select
+                      value={saudePes.unhasEncravadas}
+                      onChange={(e) => setSaudePes({ ...saudePes, unhasEncravadas: e.target.value })}
+                      className="border rounded p-2 w-full"
+                    >
+                      <option value="sim">Sim</option>
+                      <option value="nao">Não</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block mb-2">Sente formigamento, dormência ou queimação nos pés?</label>
+                    <select
+                      value={saudePes.formigamento}
+                      onChange={(e) => setSaudePes({ ...saudePes, formigamento: e.target.value })}
+                      className="border rounded p-2 w-full"
+                    >
+                      <option value="sim">Sim</option>
+                      <option value="nao">Não</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block mb-2">Há alteração na coloração ou temperatura dos pés?</label>
+                    <select
+                      value={saudePes.alteracaoCor}
+                      onChange={(e) => setSaudePes({ ...saudePes, alteracaoCor: e.target.value })}
+                      className="border rounded p-2 w-full"
+                    >
+                      <option value="sim">Sim</option>
+                      <option value="nao">Não</option>
+                    </select>
+                  </div>
+
+                  {/* Avaliação Visual */}
+                  <h3 className="text-xl font-semibold mt-6">Avaliação Visual (preenchida pelo profissional)</h3>
+                  <div>
+                    <label className="block mb-2">Pele:</label>
+                    <input
+                      type="text"
+                      value={avaliacao.pele}
+                      onChange={(e) => setAvaliacao({ ...avaliacao, pele: e.target.value })}
+                      className="border rounded p-2 w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-2">Unhas:</label>
+                    <input
+                      type="text"
+                      value={avaliacao.unhas}
+                      onChange={(e) => setAvaliacao({ ...avaliacao, unhas: e.target.value })}
+                      className="border rounded p-2 w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-2">Presença de calosidades, fissuras ou micoses?</label>
+                    <input
+                      type="text"
+                      value={avaliacao.calosidades}
+                      onChange={(e) => setAvaliacao({ ...avaliacao, calosidades: e.target.value })}
+                      className="border rounded p-2 w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-2">Tipo de pisada:</label>
+                    <input
+                      type="text"
+                      value={avaliacao.tipoPisada}
+                      onChange={(e) => setAvaliacao({ ...avaliacao, tipoPisada: e.target.value })}
+                      className="border rounded p-2 w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-2">Edemas (inchaços):</label>
+                    <input
+                      type="text"
+                      value={avaliacao.edemas}
+                      onChange={(e) => setAvaliacao({ ...avaliacao, edemas: e.target.value })}
+                      className="border rounded p-2 w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-2">Hidratação e sensibilidade da pele:</label>
+                    <input
+                      type="text"
+                      value={avaliacao.hidratacao}
+                      onChange={(e) => setAvaliacao({ ...avaliacao, hidratacao: e.target.value })}
+                      className="border rounded p-2 w-full"
+                    />
+                  </div>
+
+                  {/* Anexar Arquivos */}
+                  <div>
+                    <label className="block mb-2">Anexar Arquivos (fotos, PDFs):</label>
+                    <input
+                      type="file"
+                      multiple
+                      onChange={handleFileChange}
+                      className="border rounded p-2 w-full"
+                    />
+                    <div className="mt-2">
+                      {anexos.map((file, index) => (
+                        <div key={index} className="flex justify-between items-center">
+                          <span>{file.name}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveFile(index)}
+                            className="text-red-500 hover:underline"
+                          >
+                            Remover
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Botões de Salvar e Cancelar */}
+                  <div className="flex justify-between mt-6">
+                    <button
+                      type="button"
+                      className="bg-gray-500 text-white rounded px-4 py-2 hover:bg-gray-600"
+                      onClick={() => {
+                        // Lógica para cancelar (por exemplo, limpar campos ou redirecionar)
+                        setIsModalOpen(false); // Fecha o modal
+                      }}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      className="bg-blue-500 text-white rounded px-4 py-2 hover:bg-blue-600"
+                    >
+                      Salvar
+                    </button>
+                  </div>
+                </form>
+              </Modal>
             </>
           )}
         </main>
