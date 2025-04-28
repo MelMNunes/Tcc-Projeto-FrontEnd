@@ -39,9 +39,9 @@ interface FormularioAgendamentoFuncionarioProps {
   agendamento?: Agendamento;
 }
 
-const FormularioAgendamentoFuncionario: React.FC<
-  FormularioAgendamentoFuncionarioProps
-> = ({ passoAtual, setPassoAtual, funcionarioId, agendamento }) => {
+const FormularioAgendamentoFuncionario: React.FC<FormularioAgendamentoFuncionarioProps> = ({ 
+  funcionarioId, agendamento }) => {
+  const [passoAtual, setPassoAtual] = useState(0);
   const [mostrarModal, setMostrarModal] = useState(false);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
@@ -191,11 +191,11 @@ const FormularioAgendamentoFuncionario: React.FC<
   };
 
   return (
-    <div className="flex flex-col w-full max-w-2xl p-6 bg-white rounded-2xl shadow-lg border">
+    <div className="flex flex-col w-full max-w-2xl p-6 bg-white rounded-2xl shadow-lg border text-black">
       {passoAtual === 0 && (
-        <div>
+        <div className="text-black">
           <h2 className="text-2xl font-semibold mb-4">Escolha o Serviço</h2>
-          <div className="space-y-2">
+          <div className="space-y-2 ">
             {servicos.length > 0 ? (
               servicos.map((servico) => (
                 <label key={servico.id} className="flex items-center space-x-2">
@@ -207,7 +207,7 @@ const FormularioAgendamentoFuncionario: React.FC<
                     onChange={() => handleServicoChange(servico.id)}
                     className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
-                  <span className="text-gray-700">
+                  <span className="text-black">
                     {servico.nome} - R$ {servico.preco.toFixed(2)}
                   </span>
                 </label>
@@ -393,7 +393,9 @@ const FormularioAgendamentoFuncionario: React.FC<
             horario: detalhesAgendamento.horario,
             outros: detalhesAgendamento.descricao,
           }}
+          
           servicosList={servicos}
+          
         />
       )}
     </div>
