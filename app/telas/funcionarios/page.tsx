@@ -9,10 +9,12 @@ import {
 import { useRouter } from "next/navigation";
 import Modal from "@/app/components/Modal/Modal";
 import FormularioAnamnesePage from "@/app/telas/anamnese/page";
+// import ModalReagendamento from "@/app/components/ModalReagendamento";
 
 const FuncionariosPage: React.FC = () => {
   // Tipagens
   interface Consulta {
+    clienteId: number;
     id: number;
     dataHora: string;
     servicoNome: string;
@@ -42,7 +44,15 @@ const FuncionariosPage: React.FC = () => {
 
   // Estados principais
   const [passoAtual, setPassoAtual] = useState(0);
+  const [statusFiltro, setStatusFiltro] = useState("PENDENTE"); // ✔️ CORRETO
   const [users, setUsers] = useState<Usuario[]>([]); // Estado para armazenar usuários
+  // const [novaDataHora, setNovaDataHora] = useState<string>("");
+  const [loadingFinalizarId, setLoadingFinalizarId] = useState<number | null>(
+    null
+  );
+  const [historicoAgendamentos, setHistoricoAgendamentos] = useState<
+    Consulta[]
+  >([]);
   const [nome, setNome] = useState<string>("");
   const [selectedTab, setSelectedTab] = useState<string>("agendamento");
   const [funcionarioData, setFuncionarioData] =
@@ -54,7 +64,7 @@ const FuncionariosPage: React.FC = () => {
   const [expandedConsultaId, setExpandedConsultaId] = useState<number | null>(
     null
   );
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedConsultaId, setSelectedConsultaId] = useState<number | null>(
     null
   );
@@ -68,12 +78,6 @@ const FuncionariosPage: React.FC = () => {
   const [newTelefone, setNewTelefone] = useState<string>("");
   const [newSenha, setNewSenha] = useState<string>("");
 
-  // Estado para controle mensagem do WhatsApp
-  const [phone, setPhone] = useState<string>("");
-  const [message, setMessage] = useState<string>("");
-  const [sending, setSending] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-
   useEffect(() => {
     const userDataString = localStorage.getItem("user");
 
@@ -84,25 +88,6 @@ const FuncionariosPage: React.FC = () => {
 
         const userId = Number(localStorage.getItem("id"));
         fetchFuncionarioData(userId);
-        fetchAgendamentos(userId);
-        fetchUsers(); // Chama a função para buscar usuários
-      } catch (error) {
-        console.error("Erro ao recuperar dados do funcionário:", error);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    const userDataString = localStorage.getItem("user");
-
-    if (userDataString) {
-      try {
-        const userData = JSON.parse(userDataString);
-        setNome(userData.nome || "Usuário");
-
-        const userId = Number(localStorage.getItem("id"));
-        fetchFuncionarioData(userId);
-        fetchAgendamentos(userId);
         fetchUsers(); // Chama a função para buscar usuários
       } catch (error) {
         console.error("Erro ao recuperar dados do funcionário:", error);
@@ -142,30 +127,117 @@ const FuncionariosPage: React.FC = () => {
     try {
       const data: Consulta[] = await getAgendamentosByFuncionarioId(userId);
       const agByDia: Record<string, Consulta[]> = {};
+      const historico: Consulta[] = [];
 
       data.forEach((c) => {
-        const dia = new Date(c.dataHora).toLocaleDateString();
-        if (!agByDia[dia]) agByDia[dia] = [];
-        agByDia[dia].push(c);
+        if (c.status === "FINALIZADO" || c.status === "CANCELADO") {
+          historico.push(c);
+        } else {
+          const dia = new Date(c.dataHora).toLocaleDateString();
+          if (!agByDia[dia]) agByDia[dia] = [];
+          agByDia[dia].push(c);
+        }
       });
 
       const diasOrdenados = Object.keys(agByDia).sort(
         (a, b) => new Date(a).getTime() - new Date(b).getTime()
       );
 
-      setAgendamentos(
-        diasOrdenados.map((dia) => ({
-          dia,
-          consultas: agByDia[dia].sort(
-            (a, b) =>
-              new Date(a.dataHora).getTime() - new Date(b.dataHora).getTime()
-          ),
-        }))
-      );
+      const agendamentosList = diasOrdenados.map((dia) => ({
+        dia,
+        consultas: agByDia[dia].sort(
+          (a, b) =>
+            new Date(a.dataHora).getTime() - new Date(b.dataHora).getTime()
+        ),
+      }));
+
+      setAgendamentos(agendamentosList);
+      setHistoricoAgendamentos(historico);
+
+      // Armazenar agendamentos no Local Storage
+      localStorage.setItem("agendamentos", JSON.stringify(agendamentosList));
     } catch (error) {
       console.error("Erro ao buscar agendamentos:", error);
     }
   };
+
+  useEffect(() => {
+    const storedHist = localStorage.getItem("historicoAgendamentos");
+    if (storedHist) {
+      setHistoricoAgendamentos(JSON.parse(storedHist));
+    } else {
+      // Caso não tenha histórico armazenado, você pode buscar da API ou inicializar com uma lista vazia
+      setHistoricoAgendamentos([]);
+    }
+
+    const storedAgendamentos = localStorage.getItem("agendamentos");
+    if (storedAgendamentos) {
+      setAgendamentos(JSON.parse(storedAgendamentos));
+    } else {
+      const userId = Number(localStorage.getItem("id"));
+    }
+  }, []);
+
+  //aqui
+  useEffect(() => {
+    const fetchPorStatus = async () => {
+      try {
+        const funcionarioId = Number(localStorage.getItem("id"));
+        const response = await fetch(
+          `http://localhost:8080/api/agendamentos/funcionarios/${funcionarioId}/status/${statusFiltro}`
+        );
+        if (!response.ok)
+          throw new Error("Erro ao buscar agendamentos por status");
+
+        const data = await response.json();
+
+        // Agora sempre que o filtro mudar, ele vai preencher corretamente os agendamentos
+        setAgendamentos([
+          {
+            dia: "Agendamentos",
+            consultas: data,
+          },
+        ]);
+      } catch (error) {
+        console.error("Erro ao buscar agendamentos por status:", error);
+      }
+    };
+
+    fetchPorStatus();
+  }, [statusFiltro]);
+
+  useEffect(() => {
+    if (selectedTab === "consultas") {
+      // Quando a aba de consultas for aberta, forçamos o filtro PENDENTE
+      setStatusFiltro("PENDENTE");
+    }
+  }, [selectedTab]);
+
+  useEffect(() => {
+    const fetchPorStatus = async () => {
+      try {
+        const funcionarioId = Number(localStorage.getItem("id"));
+        const response = await fetch(
+          `http://localhost:8080/api/agendamentos/funcionarios/${funcionarioId}/status/${statusFiltro}`
+        );
+        if (!response.ok)
+          throw new Error("Erro ao buscar agendamentos por status");
+
+        const data = await response.json();
+
+        setAgendamentos([
+          {
+            dia: "Agendamentos",
+            consultas: data,
+          },
+        ]);
+      } catch (error) {
+        console.error("Erro ao buscar agendamentos por status:", error);
+      }
+    };
+
+    fetchPorStatus();
+  }, [statusFiltro]);
 
   // Função para abrir o modal de anamnese
   const openAnamnese = (consultaId: number) => {
@@ -237,33 +309,11 @@ const FuncionariosPage: React.FC = () => {
     }
   };
 
-  const handleSendMessage = async () => {
-    setSending(true);
-    setError(null);
-    try {
-      const response = await fetch("https://api.wali.chat/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Token:
-            "0f2d95328f00d15bfadf10c0a45637cc44887b111f9af7fe2f9004ebd5b3c7d8f2c4359adf72b609", // Substitua pela sua chave de API
-        },
-        body: JSON.stringify({ phone, message }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Erro ao enviar mensagem: " + response.statusText);
-      }
-
-      const data = await response.json();
-      alert("Mensagem enviada com sucesso: " + data);
-      setMessage(""); // Limpa o campo de mensagem após o envio
-    } catch (err: Error) {
-      setError("Erro ao enviar mensagem: " + err.message);
-    } finally {
-      setSending(false);
-    }
-  };
+  // // Função para abrir o modal de reagendamento
+  // const openReagendarModal = (consulta: Consulta) => {
+  //   setSelectedConsultaId(consulta.id);
+  //   setIsReagendarModalOpen(true);
+  // };
 
   // Filtra os usuários com base no termo de pesquisa
   const filteredUsers = users.filter(
@@ -273,48 +323,128 @@ const FuncionariosPage: React.FC = () => {
       user.telefone.includes(searchTerm)
   );
 
-  
+  const handleFinalizar = async (agendamentoId: number) => {
+    setLoadingFinalizarId(agendamentoId);
+    try {
+      // 1) Chama a API e obtém o objeto atualizado
+      const response = await fetch(
+        `http://localhost:8080/api/agendamentos/atualizar-status/${agendamentoId}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify("FINALIZADO"),
+        }
+      );
+      if (!response.ok) throw new Error("Erro ao finalizar");
+
+      // 2) O servidor já retorna o AgendamentoDTO atualizado
+      const updated: Consulta = await response.json();
+
+      // 3) Remove dos próximos agendamentos
+      setAgendamentos((prev) =>
+        prev
+          .map(({ dia, consultas }) => ({
+            dia,
+            consultas: consultas.filter((c) => c.id !== agendamentoId),
+          }))
+          .filter((g) => g.consultas.length > 0)
+      );
+
+      // 4) Adiciona ao histórico
+      setHistoricoAgendamentos((prev) => {
+        const updatedHistorico = [...prev, updated];
+        // 5) Salva o histórico no localStorage
+        localStorage.setItem(
+          "historicoAgendamentos",
+          JSON.stringify(updatedHistorico)
+        );
+        return updatedHistorico;
+      });
+
+      // 6) Vai para a aba Histórico
+      setSelectedTab("historico");
+    } catch (err) {
+      console.error(err);
+      alert("Não foi possível finalizar.");
+    } finally {
+      setLoadingFinalizarId(null);
+    }
+  };
+
+  // Função para cancelar um agendamento
+  const handleCancelar = async (agendamentoId: number) => {
+    try {
+      const response = await fetch(
+        `http://localhost:8080/api/agendamentos/atualizar-status/${agendamentoId}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify("CANCELADO"),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Erro ao cancelar agendamento");
+      }
+
+      // Atualiza a lista de agendamentos após o cancelamento
+      fetchAgendamentos(funcionarioData!.id);
+
+      // Adiciona o agendamento ao histórico
+      const canceledAgendamento = agendamentos
+        .flatMap((a) => a.consultas)
+        .find((c) => c.id === agendamentoId);
+
+      if (canceledAgendamento) {
+        setHistoricoAgendamentos((prev) => [
+          ...prev,
+          { ...canceledAgendamento, status: "CANCELADO" },
+        ]);
+      }
+
+      // Muda para a aba de histórico
+      setSelectedTab("historico");
+    } catch (error) {
+      console.error("Erro ao cancelar agendamento:", error);
+      alert("Erro ao cancelar agendamento.");
+    }
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-100 text-black">
       {/* Sidebar */}
       <nav className="w-64 bg-white p-4 shadow h-screen fixed flex flex-col justify-between">
-        <ul className="space-y-2">
-          {[
-            "agendamento",
-            "consultas",
-            "historico",
-            "perfil",
-            "enviarMensagem",
-            "pesquisarUsuarios",
-          ].map((tab) => (
-            <li
-              key={tab}
-              className={`p-2 rounded cursor-pointer ${
-                selectedTab === tab
-                  ? "bg-blue-500 text-white"
-                  : "hover:bg-gray-200"
-              }`}
-              onClick={() => setSelectedTab(tab)}
-            >
-              {
+        <ul className="space-y-3">
+          {["agendamento", "consultas", "pesquisarUsuarios", "perfil"].map(
+            (tab) => (
+              <li
+                key={tab}
+                className={`p-2 rounded cursor-pointer ${
+                  selectedTab === tab
+                    ? "bg-blue-500 text-white"
+                    : "hover:bg-gray-200"
+                }`}
+                onClick={() => setSelectedTab(tab)}
+              >
                 {
-                  agendamento: "Agendamento",
-                  consultas: "Próximas Consultas",
-                  historico: "Histórico",
-                  perfil: "Perfil",
-                  enviarMensagem: "Enviar Mensagem",
-                  pesquisarUsuarios: "Pesquisar Clientes",
-                }[tab]
-              }
-            </li>
-          ))}
+                  {
+                    agendamento: "Agendamento",
+                    consultas: "Próximas Consultas",
+                    perfil: "Perfil",
+                    pesquisarUsuarios: "Pesquisar Clientes",
+                  }[tab]
+                }
+              </li>
+            )
+          )}
         </ul>
         <button
           className="bg-red-500 text-white p-2 rounded mt-4 hover:bg-red-600"
           onClick={() => {
-            localStorage.clear();
-            router.push("/");
+            if (confirm("Tem certeza que deseja sair?")) {
+              localStorage.clear();
+              router.push("/");
+            }
           }}
         >
           Sair
@@ -345,62 +475,140 @@ const FuncionariosPage: React.FC = () => {
                 </section>
               )}
 
-              {/* Aba Próximas Consultas */}
+              {/* Aba Consultas */}
               {selectedTab === "consultas" && (
-                <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <section className="grid grid-cols-1 gap-4">
+                  {/* Filtro de status */}
+                  <div className="mb-4">
+                    <label className="font-semibold mr-2 text-lg">
+                      Filtrar por status:
+                    </label>
+                    <select
+                      className="px-4 py-2 rounded-2xl border border-gray-300 shadow-sm text-base focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      value={statusFiltro}
+                      onChange={(e) => setStatusFiltro(e.target.value)}
+                    >
+                      <option value="PENDENTE">🟡 Pendentes</option>
+                      <option value="FINALIZADO">✅ Finalizados</option>
+                      <option value="CANCELADO">❌ Cancelados</option>
+                    </select>
+                  </div>
+
                   {agendamentos
                     .flatMap((g) => g.consultas)
                     .map((c) => (
-                      <div key={c.id} className="border p-4 rounded shadow">
-                        <p className="font-medium">
-                          {new Date(c.dataHora).toLocaleDateString()} –{" "}
-                          {new Date(c.dataHora).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </p>
-                        <p>
-                          <strong>Cliente:</strong> {c.clienteNome}
-                        </p>
-                        <p>
-                          <strong>Serviço:</strong> {c.servicoNome}
-                        </p>
-                        <div className="mt-2 space-x-2">
+                      <div
+                        key={c.id}
+                        className={`border p-4 rounded shadow ${
+                          c.status === "FINALIZADO"
+                            ? "bg-green-100"
+                            : c.status === "CANCELADO"
+                            ? "bg-red-100"
+                            : "bg-white"
+                        }`}
+                      >
+                        <div className="flex justify-between">
+                          <div>
+                            <p className="font-bold text-xl mb-2">
+                              {new Date(c.dataHora).toLocaleDateString()} –{" "}
+                              {new Date(c.dataHora).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </p>
+                            <p
+                              className={`${
+                                c.status !== "PENDENTE" ? "line-through" : ""
+                              }`}
+                            >
+                              <strong>Cliente:</strong> {c.clienteNome}
+                            </p>
+                            <p
+                              className={`${
+                                c.status !== "PENDENTE" ? "line-through" : ""
+                              }`}
+                            >
+                              <strong>Serviço:</strong> {c.servicoNome}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="mt-2 flex justify-between items-center">
                           {c.status === "PENDENTE" && (
                             <>
                               <button
-                                onClick={() => handleConfirmar(c.id)}
-                                className="px-2 py-1 bg-green-500 text-white rounded"
+                                onClick={() => openAnamnese(c.id)}
+                                className={`px-2 py-1 bg-purple-700 text-white rounded`}
                               >
-                                Confirmar
+                                Anamnese
                               </button>
-                              <button
-                                onClick={() => handleFinalizar(c.id)}
-                                className="px-2 py-1 bg-blue-500 text-white rounded"
-                              >
-                                Finalizar
-                              </button>
+
+                              <div className="space-x-2">
+                                <button
+                                  onClick={() => handleFinalizar(c.id)}
+                                  className={`px-2 py-1 text-white rounded ${
+                                    loadingFinalizarId === c.id
+                                      ? "bg-green-300 cursor-not-allowed"
+                                      : "bg-green-500 hover:bg-green-600"
+                                  }`}
+                                  disabled={loadingFinalizarId === c.id}
+                                >
+                                  {loadingFinalizarId === c.id
+                                    ? "Finalizando..."
+                                    : "Finalizar"}
+                                </button>
+
+                                <button
+                                  onClick={() => handleCancelar(c.id)}
+                                  className="px-2 py-1 bg-red-500 text-white rounded"
+                                >
+                                  Cancelar
+                                </button>
+                              </div>
                             </>
                           )}
-                          <button
-                            onClick={() => openAnamnese(c.id)}
-                            className="px-2 py-1 bg-purple-500 text-white rounded"
-                          >
-                            Anamnese
-                          </button>
+
+                          {c.status === "FINALIZADO" && (
+                            <>
+                              <button
+                                onClick={() => openAnamnese(c.id)}
+                                className={`px-2 py-1 bg-purple-700 text-white rounded`}
+                              >
+                                Anamnese
+                              </button>
+
+                              <div className="space-x-2">
+                                <button
+                                  onClick={() => handleCancelar(c.id)}
+                                  className="px-2 py-1 bg-red-500 text-white rounded"
+                                >
+                                  Cancelar
+                                </button>
+                              </div>
+                            </>
+                          )}
+
+                          {c.status === "CANCELADO" && (
+                            <>
+                              <button
+                                onClick={() => openAnamnese(c.id)}
+                                className={`px-2 py-1 bg-purple-700 text-white rounded`}
+                              >
+                                Anamnese
+                              </button>
+
+                              <div className="space-x-2">
+                              <button
+                                onClick={() => handleFinalizar(c.id)}
+                                className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                              >
+                                Restaurar
+                              </button>
+                              </div>
+                            </>
+                          )}
                         </div>
                       </div>
                     ))}
-                </section>
-              )}
-
-              {/* Aba Histórico */}
-              {selectedTab === "historico" && (
-                <section>
-                  <h3 className="text-xl font-semibold mb-4">Histórico</h3>
-                  <p className="text-gray-600">
-                    Histórico de consultas ainda não implementado.
-                  </p>
                 </section>
               )}
 
@@ -489,36 +697,6 @@ const FuncionariosPage: React.FC = () => {
                 </section>
               )}
 
-              {/* Seção para enviar mensagem */}
-              {selectedTab === "enviarMensagem" && (
-                <section>
-                  <h2 className="text-2xl font-semibold mb-4">
-                    Enviar Mensagem
-                  </h2>
-                  <input
-                    type="text"
-                    placeholder="Número de telefone (ex: +551196777071)"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="border p-2 rounded mb-2"
-                  />
-                  <textarea
-                    placeholder="Digite sua mensagem"
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    className="border p-2 rounded mb-2"
-                  />
-                  <button
-                    onClick={handleSendMessage}
-                    disabled={sending}
-                    className="bg-blue-500 text-white p-2 rounded"
-                  >
-                    {sending ? "Enviando..." : "Enviar Mensagem"}
-                  </button>
-                  {error && <p className="text-red-500">{error}</p>}
-                </section>
-              )}
-
               {/* Seção para pesquisar clientes */}
               {selectedTab === "pesquisarUsuarios" && (
                 <section>
@@ -568,14 +746,21 @@ const FuncionariosPage: React.FC = () => {
         {/* Modal de Anamnese */}
         <Modal isOpen={isModalOpen} onClose={handleCloseModal}>
           {selectedConsultaId ? (
-              <FormularioAnamnesePage
-                agendamentoId={selectedConsultaId}
-                onClose={handleCloseModal}
-              />
+            <FormularioAnamnesePage
+              agendamentoId={selectedConsultaId}
+              onClose={handleCloseModal}
+            />
           ) : (
             <p>Carregando...</p> // Exibir um texto caso o ID não esteja correto
           )}
         </Modal>
+
+        {/* Modal de Reagendamento
+        <ModalReagendamento
+          isOpen={isReagendarModalOpen}
+          onClose={() => setIsReagendarModalOpen(false)}
+          onConfirm={handleReagendar}
+        /> */}
       </div>
     </div>
   );

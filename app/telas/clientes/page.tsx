@@ -70,14 +70,14 @@ const ClientesPage = () => {
         `http://localhost:8080/api/agendamentos/clientes/${userId}`
       );
       const data = await response.json();
-  
+
       // Ordenar os agendamentos por data e hora
       const sortedAgendamentos = data.sort((a: Consulta, b: Consulta) => {
         const dateA = new Date(a.dataHora);
         const dateB = new Date(b.dataHora);
         return dateA.getTime() - dateB.getTime(); // Ordena em ordem crescente
       });
-  
+
       setAgendamentos(sortedAgendamentos);
     } catch (error) {
       console.error("Erro ao buscar agendamentos:", error);
@@ -154,12 +154,13 @@ const ClientesPage = () => {
           </ul>
         </div>
         <button
-          className="bg-red-500 text-white rounded px-4 py-2 hover:bg-red-600 w-full"
           onClick={() => {
-            localStorage.removeItem("user");
-            localStorage.removeItem("token");
-            window.location.href = "/";
+            const confirmar = confirm("Tem certeza que deseja sair?");
+            if (confirmar) {
+              window.location.href = "/";
+            }
           }}
+          className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
         >
           Sair
         </button>

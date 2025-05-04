@@ -1,14 +1,17 @@
 "use client";
 
 import React, { useState } from "react";
-import Modal from "@/app/components/Modal/Modal"
+import Modal from "@/app/components/Modal/Modal";
 
 interface FormularioAnamnesePageProps {
   agendamentoId: number;
   onClose: () => void;
 }
 
-const FormularioAnamnesePage: React.FC<FormularioAnamnesePageProps> = ({ agendamentoId, onClose }) => {
+const FormularioAnamnesePage: React.FC<FormularioAnamnesePageProps> = ({
+  agendamentoId,
+  onClose,
+}) => {
   // Estados do formulário
   const [dataRegistro, setDataRegistro] = useState<string>("");
   const [idade, setIdade] = useState<string>("");
@@ -19,17 +22,18 @@ const FormularioAnamnesePage: React.FC<FormularioAnamnesePageProps> = ({ agendam
   const [historia, setHistoria] = useState<string>("");
   const [doencas, setDoencas] = useState<string[]>([]);
   const [outraDoenca, setOutraDoenca] = useState<string>("");
-  const [cirurgiaRecente, setCirurgiaRecente] = useState<string>("nao");
-  const [alergia, setAlergia] = useState<string>("nao");
+  const [cirurgiaRecente, setCirurgiaRecente] = useState<string>("");
+  const [alergia, setAlergia] = useState<string>("");
   const [medicamentos, setMedicamentos] = useState<string>("");
   const [produtos, setProdutos] = useState<string>("");
   const [materiais, setMateriais] = useState<string>("");
-  const [historicoFamiliar, setHistoricoFamiliar] = useState<string>("nao");
-  const [historicoFamiliarEspecificar, setHistoricoFamiliarEspecificar] = useState<string>("");
+  const [historicoFamiliar, setHistoricoFamiliar] = useState<string>("");
+  const [historicoFamiliarEspecificar, setHistoricoFamiliarEspecificar] =
+    useState<string>("");
   const [habitos, setHabitos] = useState({
     atividadeFisica: "",
-    consomeAlcool: "nao",
-    fuma: "nao",
+    consomeAlcool: "",
+    fuma: "",
     nivelEstresse: "",
   });
   const [saudePes, setSaudePes] = useState({
@@ -107,21 +111,21 @@ const FormularioAnamnesePage: React.FC<FormularioAnamnesePageProps> = ({ agendam
     setAnexos((prev) => prev.filter((_, i) => i !== index));
   };
   return (
-    <Modal isOpen={isModalOpen} onClose={handleCloseModal}>
-    <div className="p-8">
-      <h1 className="text-3xl font-bold mb-6">Formulário de Anamnese</h1>
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* === Dados Iniciais === */}
-        <div>
-          <label className="block mb-2">Data de Registro:</label>
-          <input
-            type="date"
-            value={dataRegistro}
-            onChange={(e) => setDataRegistro(e.target.value)}
-            className="border rounded p-2 w-full"
-            required
-          />
-        </div>
+    <Modal isOpen={true} onClose={onClose}>
+      <div className="p-8">
+        <h1 className="text-3xl font-bold mb-6">Formulário de Anamnese</h1>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* === Dados Iniciais === */}
+          <div>
+            <label className="block mb-2">Data de Registro:</label>
+            <input
+              type="date"
+              value={dataRegistro}
+              onChange={(e) => setDataRegistro(e.target.value)}
+              className="border rounded p-2 w-full"
+              required
+            />
+          </div>
 
           <div>
             <label className="block mb-2">Idade:</label>
@@ -228,6 +232,7 @@ const FormularioAnamnesePage: React.FC<FormularioAnamnesePageProps> = ({ agendam
               onChange={(e) => setCirurgiaRecente(e.target.value)}
               className="border rounded p-2 w-full"
             >
+              <option value="">Selecione</option>
               <option value="sim">Sim</option>
               <option value="nao">Não</option>
             </select>
@@ -241,6 +246,7 @@ const FormularioAnamnesePage: React.FC<FormularioAnamnesePageProps> = ({ agendam
               onChange={(e) => setAlergia(e.target.value)}
               className="border rounded p-2 w-full"
             >
+              <option value="">Selecione</option>
               <option value="sim">Sim</option>
               <option value="nao">Não</option>
             </select>
@@ -279,6 +285,7 @@ const FormularioAnamnesePage: React.FC<FormularioAnamnesePageProps> = ({ agendam
               onChange={(e) => setHistoricoFamiliar(e.target.value)}
               className="border rounded p-2 w-full"
             >
+              <option value="">Selecione</option>
               <option value="sim">Sim</option>
               <option value="nao">Não</option>
             </select>
@@ -306,6 +313,7 @@ const FormularioAnamnesePage: React.FC<FormularioAnamnesePageProps> = ({ agendam
               }
               className="border rounded p-2 w-full"
             >
+              <option value="">Selecione</option>
               <option value="sim">Sim</option>
               <option value="nao">Não</option>
             </select>
@@ -319,6 +327,7 @@ const FormularioAnamnesePage: React.FC<FormularioAnamnesePageProps> = ({ agendam
               }
               className="border rounded p-2 w-full"
             >
+              <option value="">Selecione</option>
               <option value="sim">Sim</option>
               <option value="nao">Não</option>
             </select>
@@ -330,6 +339,7 @@ const FormularioAnamnesePage: React.FC<FormularioAnamnesePageProps> = ({ agendam
               onChange={(e) => setHabitos({ ...habitos, fuma: e.target.value })}
               className="border rounded p-2 w-full"
             >
+              <option value="">Selecione</option>
               <option value="sim">Sim</option>
               <option value="nao">Não</option>
             </select>
@@ -531,7 +541,7 @@ const FormularioAnamnesePage: React.FC<FormularioAnamnesePageProps> = ({ agendam
           {/* Botão de Fechar Modal sem Salvar */}
           <div className="flex justify-end mt-4">
             <button
-              onClick={handleCloseModal}
+              onClick={onClose} // Use onClose aqui
               className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
             >
               Fechar

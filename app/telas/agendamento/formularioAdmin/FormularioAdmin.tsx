@@ -164,6 +164,8 @@ const FormularioAdmin: React.FC<FormularioAdminProps> = ({
         body: JSON.stringify(agendamentoData),
       });
 
+      alert("Agendamento confirmado com sucesso!");
+
       const responseData = await response.json();
       console.log("Agendamento salvo com sucesso:", responseData);
       setMostrarModal(true);

@@ -155,6 +155,8 @@ const FormularioAgendamento: React.FC<{ clienteId: number }> = ({
           body: JSON.stringify(agendamentoData),
         }
       );
+      
+      alert("Agendamento confirmado com sucesso!");
 
       if (!response.ok) {
         throw new Error("Erro ao salvar agendamento");

@@ -39,7 +39,9 @@ interface AgendamentoCompleto {
 
 const RecepcaoPage: React.FC = () => {
   const router = useRouter();
-  const [selectedTab, setSelectedTab] = useState<"fila" | "agendamentos" | "pagamentos" | "clientes">("fila");
+  const [selectedTab, setSelectedTab] = useState<
+    "fila" | "agendamentos" | "pagamentos" | "clientes"
+  >("fila");
   const [agendamentos, setAgendamentos] = useState<AgendamentoCompleto[]>([]);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -53,33 +55,32 @@ const RecepcaoPage: React.FC = () => {
     }
   }, [selectedTab]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
-    router.push("/");
-  };
-
   const buscarAgendamentos = async () => {
     try {
       setLoading(true);
-      const response = await fetch("http://localhost:8080/api/agendamentos/buscar/todos", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        cache: "no-cache",
-      });
-  
+      const response = await fetch(
+        "http://localhost:8080/api/agendamentos/buscar/todos",
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          cache: "no-cache",
+        }
+      );
+
       if (!response.ok) {
         throw new Error(`Erro ao buscar agendamentos: ${response.status}`);
       }
-  
+
       const data: Agendamento[] = await response.json();
       const agendamentosCompletos = data.map((agendamento) => {
         const clienteNome = agendamento.cliente?.nome ?? "Cliente desconhecido";
-        const funcionarioNome = agendamento.funcionario?.nome ?? "Funcionário não encontrado";
-        const servicoNome = agendamento.servico?.nome ?? "Serviço não encontrado";
-  
+        const funcionarioNome =
+          agendamento.funcionario?.nome ?? "Funcionário não encontrado";
+        const servicoNome =
+          agendamento.servico?.nome ?? "Serviço não encontrado";
+
         return {
           id: agendamento.id,
           dataHora: agendamento.dataHora,
@@ -88,7 +89,7 @@ const RecepcaoPage: React.FC = () => {
           servicoNome,
         };
       });
-  
+
       // Agrupar os agendamentos por dia
       const agendamentosPorDia: { [key: string]: AgendamentoCompleto[] } = {};
       agendamentosCompletos.forEach((agendamento) => {
@@ -98,27 +99,28 @@ const RecepcaoPage: React.FC = () => {
         }
         agendamentosPorDia[dataDia].push(agendamento);
       });
-  
+
       // Ordenar os dias
       const diasOrdenados = Object.keys(agendamentosPorDia).sort(
         (a, b) => new Date(a).getTime() - new Date(b).getTime()
       );
-  
+
       // Ordenar os agendamentos por hora dentro de cada dia
       const agendamentosOrdenados = diasOrdenados.map((dia) => {
         return {
           dia,
           consultas: agendamentosPorDia[dia].sort(
-            (a, b) => new Date(a.dataHora).getTime() - new Date(b.dataHora).getTime()
+            (a, b) =>
+              new Date(a.dataHora).getTime() - new Date(b.dataHora).getTime()
           ),
         };
       });
-  
+
       // Ordenar os agendamentos por dia e hora
       const sortedAgendamentos = agendamentosOrdenados.sort(
         (a, b) => new Date(a.dia).getTime() - new Date(b.dia).getTime()
       );
-  
+
       setAgendamentos(sortedAgendamentos);
     } catch (error) {
       console.error("Erro ao buscar agendamentos:", error);
@@ -129,12 +131,15 @@ const RecepcaoPage: React.FC = () => {
 
   const buscarClientes = async () => {
     try {
-      const response = await fetch("http://localhost:8080/api/usuarios/listar/todos", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await fetch(
+        "http://localhost:8080/api/usuarios/listar/todos",
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`Erro ao buscar clientes: ${response.status}`);
@@ -152,8 +157,13 @@ const RecepcaoPage: React.FC = () => {
       <header className="fixed top-0 left-0 w-full bg-white p-4 shadow-md flex justify-between items-center z-10">
         <h1 className="text-xl font-semibold">Painel da Recepção</h1>
         <button
+          onClick={() => {
+            const confirmar = confirm("Tem certeza que deseja sair?");
+            if (confirmar) {
+              window.location.href = "/";
+            }
+          }}
           className="bg-red-500 text-white rounded px-4 py-2 hover:bg-red-600"
-          onClick={handleLogout}
         >
           Sair
         </button>
@@ -215,7 +225,10 @@ const RecepcaoPage: React.FC = () => {
                 <p>Carregando agendamentos...</p>
               ) : agendamentos.length > 0 ? (
                 agendamentos
-                  .sort((a, b) => new Date(a.dia).getTime() - new Date(b.dia).getTime())
+                  .sort(
+                    (a, b) =>
+                      new Date(a.dia).getTime() - new Date(b.dia).getTime()
+                  )
                   .map((grupo) => (
                     <div key={grupo.dia} className="mb-4">
                       <h3 className="text-lg font-semibold">{grupo.dia}</h3>
@@ -251,63 +264,62 @@ const RecepcaoPage: React.FC = () => {
               ) : (
                 <p className="text-gray-600">Nenhum agendamento encontrado.</p>
               )}
-                           </div>
-              )}
+            </div>
+          )}
 
-              {selectedTab === "clientes" && (
-                <section>
-                  <h2 className="text-2xl font-semibold mb-4">Lista de Clientes</h2>
-                  <select
-                    className="border px-4 py-2 rounded mb-4"
-                    value={filter}
-                    onChange={(e) => setFilter(e.target.value)}
-                  >
-                    <option value="todos">Todos</option>
-                    <option value="CLIENTE">Clientes</option>
-                    <option value="FUNCIONARIO">Funcionários</option>
-                    <option value="ADMINISTRADOR">Administradores</option>
-                  </select>
-                  <input
-                    type="text"
-                    placeholder="Buscar cliente por nome"
-                    className="border px-4 py-2 rounded mb-4 w-full"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                  />
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    {clientes
-                      .filter((cliente) => {
-                        // Filtra os clientes com base no tipo selecionado e na pesquisa
-                        const matchesType =
-                          filter === "todos" || cliente.tipoDeUsuario === filter;
-                        const matchesSearch = cliente.nome
-                          .toLowerCase()
-                          .includes(search.toLowerCase());
-                        return matchesType && matchesSearch;
-                      })
-                      .map((cliente) => (
-                        <div
-                          key={cliente.id}
-                          className="p-4 bg-gray-100 rounded shadow"
-                        >
-                          <p>
-                            <strong>Nome:</strong> {cliente.nome}
-                          </p>
-                        </div>
-                      ))}
-                  </div>
-                  {clientes.length === 0 && (
-                    <p className="text-gray-600">Nenhum cliente encontrado.</p>
-                  )}
-                </section>
+          {selectedTab === "clientes" && (
+            <section>
+              <h2 className="text-2xl font-semibold mb-4">Lista de Clientes</h2>
+              <select
+                className="border px-4 py-2 rounded mb-4"
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+              >
+                <option value="todos">Todos</option>
+                <option value="CLIENTE">Clientes</option>
+                <option value="FUNCIONARIO">Funcionários</option>
+                <option value="ADMINISTRADOR">Administradores</option>
+              </select>
+              <input
+                type="text"
+                placeholder="Buscar cliente por nome"
+                className="border px-4 py-2 rounded mb-4 w-full"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {clientes
+                  .filter((cliente) => {
+                    // Filtra os clientes com base no tipo selecionado e na pesquisa
+                    const matchesType =
+                      filter === "todos" || cliente.tipoDeUsuario === filter;
+                    const matchesSearch = cliente.nome
+                      .toLowerCase()
+                      .includes(search.toLowerCase());
+                    return matchesType && matchesSearch;
+                  })
+                  .map((cliente) => (
+                    <div
+                      key={cliente.id}
+                      className="p-4 bg-gray-100 rounded shadow"
+                    >
+                      <p>
+                        <strong>Nome:</strong> {cliente.nome}
+                      </p>
+                    </div>
+                  ))}
+              </div>
+              {clientes.length === 0 && (
+                <p className="text-gray-600">Nenhum cliente encontrado.</p>
               )}
+            </section>
+          )}
 
-              {selectedTab === "agendamentos" && <FormularioAdmin />}
-            </main>
-          </div>
-        </div>
-      );
-    };
+          {selectedTab === "agendamentos" && <FormularioAdmin />}
+        </main>
+      </div>
+    </div>
+  );
+};
 
 export default RecepcaoPage;
-   

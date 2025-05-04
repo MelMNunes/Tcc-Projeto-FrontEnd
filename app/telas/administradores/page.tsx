@@ -40,12 +40,6 @@ const AdminPage = () => {
     fetchAdminData();
   }, [filter]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
-    router.push("/");
-  };
-
   const fetchUsers = async () => {
     try {
       let endpoint = "http://localhost:8080/api/usuarios/listar/todos";
@@ -168,8 +162,13 @@ const AdminPage = () => {
           </ul>
         </div>
         <button
-          className="bg-red-500 text-white rounded px-4 py-2 hover:bg-red-600 w-full"
-          onClick={handleLogout}
+          onClick={() => {
+            const confirmar = confirm("Tem certeza que deseja sair?");
+            if (confirmar) {
+              window.location.href = "/";
+            }
+          }}
+          className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
         >
           Sair
         </button>
@@ -216,7 +215,9 @@ const AdminPage = () => {
                   {users
                     .filter(
                       (user) =>
-                        user.nome.toLowerCase().includes(search.toLowerCase()) ||
+                        user.nome
+                          .toLowerCase()
+                          .includes(search.toLowerCase()) ||
                         user.cpf.includes(search) ||
                         user.telefone.includes(search)
                     )
