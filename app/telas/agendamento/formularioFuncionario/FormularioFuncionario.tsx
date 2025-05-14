@@ -1,6 +1,12 @@
-import { Dispatch, SetStateAction, useState, useEffect } from "react";
+"use client";
+
+import { useState, useEffect } from "react";
 import ModalConfirmacao from "../components/ModalConfirmacao";
-// import CalendarioFuncionario from "./CalendarioFuncionario";
+import DatePicker, { registerLocale } from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import ptBR from 'date-fns/locale/pt-BR';
+
+registerLocale('pt-BR', ptBR);
 
 interface Agendamento {
   id: number;
@@ -10,6 +16,8 @@ interface Agendamento {
   dataHora: string;
   descricao: string;
   status: string;
+  clienteNome?: string;
+  servicoNome?: string;
 }
 
 interface Cliente {
@@ -21,10 +29,11 @@ interface Cliente {
   tipoDeUsuario: string;
 }
 
-interface Funcionario {
-  id: number;
-  nome: string;
-}
+// Interface Funcionario não é necessária aqui se não listamos funcionários
+// interface Funcionario {
+//   id: number;
+//   nome: string;
+// }
 
 interface Servico {
   id: number;
@@ -33,63 +42,92 @@ interface Servico {
 }
 
 interface FormularioAgendamentoFuncionarioProps {
-  passoAtual: number;
-  setPassoAtual: Dispatch<SetStateAction<number>>;
   funcionarioId: number;
-  agendamento?: Agendamento;
+  funcionarioNome: string; // Nome do funcionário para exibição no modal
+  agendamento?: Agendamento | null;
+  onOperacaoConcluida?: () => void;
 }
 
-const FormularioAgendamentoFuncionario: React.FC<FormularioAgendamentoFuncionarioProps> = ({ 
-  funcionarioId, agendamento }) => {
+const FormularioAgendamentoFuncionario: React.FC<FormularioAgendamentoFuncionarioProps> = ({
+  funcionarioId,
+  funcionarioNome, // Recebendo o nome do funcionário
+  agendamento,
+  onOperacaoConcluida,
+}) => {
   const [passoAtual, setPassoAtual] = useState(0);
+  const [horariosOcupados, setHorariosOcupados] = useState<string[]>([]);
   const [mostrarModal, setMostrarModal] = useState(false);
   const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
   const [servicos, setServicos] = useState<Servico[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [filteredClientes, setFilteredClientes] = useState<Cliente[]>([]);
   const [selectedClienteId, setSelectedClienteId] = useState<number | null>(null);
+  const [loadingDados, setLoadingDados] = useState(true);
+
   const [detalhesAgendamento, setDetalhesAgendamento] = useState({
-    servicoId: agendamento?.servicoId ?? null,
-    clienteId: agendamento?.clienteId ?? null,
-    funcionarioId: agendamento?.funcionarioId ?? null,
-    data: agendamento ? agendamento.dataHora.split("T")[0] : "",
-    horario: agendamento
-      ? new Date(agendamento.dataHora).toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        })
-      : "",
-    descricao: agendamento?.descricao ?? "",
+    servicoId: null as number | null,
+    clienteId: null as number | null,
+    data: "",
+    horario: "",
+    descricao: "",
   });
 
   useEffect(() => {
-    // Carregar clientes
-    fetch("http://localhost:8080/api/usuarios/listar/CLIENTE")
-      .then((res) => res.json())
-      .then(setClientes)
-      .catch((err) => console.error("Erro ao carregar clientes:", err));
+    const carregarDadosIniciais = async () => {
+      setLoadingDados(true);
+      try {
+        const [clientesRes, servicosRes] = await Promise.all([
+          fetch("http://localhost:8080/api/usuarios/listar/CLIENTE"),
+          fetch("http://localhost:8080/api/servicos/listar"),
+        ]);
 
-    // Carregar funcionarios
-    fetch("http://localhost:8080/api/usuarios/listar/FUNCIONARIO")
-      .then((res) => res.json())
-      .then(setFuncionarios)
-      .catch((err) => console.error("Erro ao carregar funcionarios:", err));
+        if (!clientesRes.ok) throw new Error('Falha ao carregar clientes');
+        if (!servicosRes.ok) throw new Error('Falha ao carregar serviços');
 
-    // Carregar serviços
-    fetch("http://localhost:8080/api/servicos/listarServicos")
-      .then((res) => res.json())
-      .then(setServicos)
-      .catch((err) => console.error("Erro ao carregar serviços:", err));
+        const clientesData: Cliente[] = await clientesRes.json();
+        const servicosData: Servico[] = await servicosRes.json();
+
+        setClientes(clientesData);
+        setServicos(servicosData);
+        setFilteredClientes(clientesData);
+
+      } catch (err) {
+        console.error("Erro ao carregar dados iniciais do formulário:", err);
+      } finally {
+        setLoadingDados(false);
+      }
+    };
+    carregarDadosIniciais();
   }, []);
 
   useEffect(() => {
-    // Carregar clientes
-    fetch("http://localhost:8080/api/usuarios/listar/CLIENTE")
-      .then((res) => res.json())
-      .then(setClientes)
-      .catch((err) => console.error("Erro ao carregar clientes:", err));
-  }, []);
+    if (agendamento) {
+      setDetalhesAgendamento({
+        servicoId: agendamento.servicoId ?? null,
+        clienteId: agendamento.clienteId ?? null,
+        data: agendamento.dataHora ? agendamento.dataHora.split("T")[0] : "",
+        horario: agendamento.dataHora
+          ? new Date(agendamento.dataHora).toLocaleTimeString('pt-BR', {
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "",
+        descricao: agendamento.descricao ?? "",
+      });
+      setSelectedClienteId(agendamento.clienteId ?? null);
+      setPassoAtual(0);
+    } else {
+      setDetalhesAgendamento({
+        servicoId: null,
+        clienteId: null,
+        data: "",
+        horario: "",
+        descricao: "",
+      });
+      setSelectedClienteId(null);
+      setPassoAtual(0);
+    }
+  }, [agendamento]);
 
   useEffect(() => {
     if (searchTerm === "") {
@@ -103,117 +141,147 @@ const FormularioAgendamentoFuncionario: React.FC<FormularioAgendamentoFuncionari
     }
   }, [searchTerm, clientes]);
 
-  const avancarPasso = () => {
-    if (passoAtual === 0 && !detalhesAgendamento.servicoId) {
-      alert("Por favor, selecione um serviço antes de continuar.");
-      return;
-    }
-    if (passoAtual === 1 && !detalhesAgendamento.clienteId) {
-      alert("Por favor, selecione um cliente antes de continuar.");
-      return;
-    }
-    if (passoAtual === 2 && !detalhesAgendamento.data) {
-      alert("Por favor, selecione uma data antes de continuar.");
-      return;
-    }
-    if (passoAtual === 3 && !detalhesAgendamento.horario) {
-      alert("Por favor, selecione um horário antes de continuar.");
-      return;
+  useEffect(() => {
+    if (!detalhesAgendamento.data || !funcionarioId) {
+        setHorariosOcupados([]);
+        return;
     }
 
+    const fetchAgendamentosDoDia = async () => {
+      try {
+        const diaISO = detalhesAgendamento.data;
+        const res = await fetch(
+          `http://localhost:8080/api/agendamentos/funcionarios/${funcionarioId}/dia/${diaISO}`
+        );
+        if (!res.ok) {
+            if (res.status === 404) {
+                setHorariosOcupados([]);
+                return;
+            }
+            throw new Error('Falha ao buscar horários');
+        }
+        const lista: Pick<Agendamento, 'dataHora'>[] = await res.json();
+        const ocupados = lista.map((a) =>
+          new Date(a.dataHora).toLocaleTimeString('pt-BR', {
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        );
+        setHorariosOcupados(ocupados);
+      } catch(err) {
+        console.error("Erro ao buscar horários ocupados:", err);
+        setHorariosOcupados([]);
+      }
+    };
+    fetchAgendamentosDoDia();
+  }, [detalhesAgendamento.data, funcionarioId]);
+
+  const avancarPasso = () => {
+    if (passoAtual === 0 && !detalhesAgendamento.servicoId) {
+      alert("Por favor, selecione um serviço."); return;
+    }
+    if (passoAtual === 1 && !detalhesAgendamento.clienteId) {
+      alert("Por favor, selecione um cliente."); return;
+    }
+    if (passoAtual === 2 && !detalhesAgendamento.data) {
+      alert("Por favor, selecione uma data."); return;
+    }
+    if (passoAtual === 3 && !detalhesAgendamento.horario) {
+      alert("Por favor, selecione um horário."); return;
+    }
     setPassoAtual((prev) => Math.min(prev + 1, 4));
   };
 
   const voltarPasso = () => setPassoAtual((prev) => Math.max(prev - 1, 0));
 
   const handleServicoChange = (servicoId: number) => {
-    setDetalhesAgendamento((prev) => ({
-      ...prev,
-      servicoId,
-    }));
+    setDetalhesAgendamento((prev) => ({ ...prev, servicoId }));
   };
 
   const handleClienteChange = (clienteId: number) => {
-    setSelectedClienteId(clienteId); 
-    setDetalhesAgendamento((prev) => ({
-      ...prev,
-      clienteId,
-    }));
+    setSelectedClienteId(clienteId);
+    setDetalhesAgendamento((prev) => ({ ...prev, clienteId }));
   };
 
   const handleSubmit = async () => {
-    const { data, horario, descricao, servicoId, clienteId } =
-      detalhesAgendamento;
+    const { data, horario, descricao, servicoId, clienteId: agClienteId } = detalhesAgendamento;
 
-    if (!data || !horario || !servicoId || !clienteId) {
-      alert("Preencha todos os campos antes de continuar.");
+    if (!data || !horario || !servicoId || !agClienteId) {
+      alert("Preencha todos os campos obrigatórios (Serviço, Cliente, Data e Horário).");
+      setMostrarModal(false);
       return;
     }
 
     const dataHoraCombinada = `${data}T${horario}:00`;
 
-    const agendamentoData = {
-      clienteId,
-      funcionarioId,
+    const agendamentoDataPayload = {
+      clienteId: agClienteId,
+      funcionarioId: funcionarioId,
       servicoId,
       dataHora: dataHoraCombinada,
       descricao,
       status: "PENDENTE",
     };
 
-    console.log("Dados do agendamento:", agendamentoData);
-
     try {
-      const url = agendamento
+      const url = agendamento?.id
         ? `http://localhost:8080/api/agendamentos/${agendamento.id}`
         : "http://localhost:8080/api/agendamentos/criar";
-      const metodo = agendamento ? "PUT" : "POST";
+      const metodo = agendamento?.id ? "PUT" : "POST";
 
       const response = await fetch(url, {
         method: metodo,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(agendamentoData),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(agendamentoDataPayload),
       });
 
-      const responseData = await response.json();
-      console.log("Agendamento salvo com sucesso:", responseData);
-      setMostrarModal(true);
+      if (!response.ok) {
+        const errorBody = await response.text(); // Tenta pegar o corpo do erro
+        throw new Error(`Erro ao salvar agendamento: ${errorBody || response.status}`);
+      }
+
+      alert(`Agendamento ${agendamento?.id ? 'atualizado' : 'realizado'} com sucesso!`);
+      setMostrarModal(false);
+      onOperacaoConcluida?.();
+
     } catch (error) {
       console.error("Erro ao salvar agendamento:", error);
+      alert(`Erro ao realizar o agendamento: ${(error as Error).message}. Tente novamente.`);
+      setMostrarModal(false);
     }
   };
 
-  const handleConfirmarAgendamento = async () => {
-    await handleSubmit();
-    setMostrarModal(false);
-  };
+  const horariosPadrao = [
+    "09:00", "09:50", "10:40", "11:30", "13:00", "13:50", "14:40", "15:30", "16:20", "17:10",
+  ];
+
+  if (loadingDados) {
+      return <div className="text-center p-10 text-gray-600">Carregando dados do formulário...</div>;
+  }
 
   return (
-    <div className="flex flex-col w-full max-w-2xl p-6 bg-white rounded-2xl shadow-lg border text-black">
+    <div className="flex flex-col w-full p-6 bg-white rounded-2xl shadow-xl border text-black">
       {passoAtual === 0 && (
-        <div className="text-black">
-          <h2 className="text-2xl font-semibold mb-4">Escolha o Serviço</h2>
-          <div className="space-y-2 ">
+        <div>
+          <h2 className="text-2xl font-semibold mb-6 text-gray-700">1. Escolha o Serviço</h2>
+          <div className="space-y-3">
             {servicos.length > 0 ? (
               servicos.map((servico) => (
-                <label key={servico.id} className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    name="servico"
-                    value={servico.id}
-                    checked={detalhesAgendamento.servicoId === servico.id}
-                    onChange={() => handleServicoChange(servico.id)}
-                    className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-black">
-                    {servico.nome} - R$ {servico.preco.toFixed(2)}
-                  </span>
-                </label>
+                <button
+                  key={servico.id}
+                  onClick={() => handleServicoChange(servico.id)}
+                  className={`w-full flex justify-between items-center p-4 border rounded-lg text-left transition-all duration-150 ease-in-out transform hover:scale-105 ${
+                    detalhesAgendamento.servicoId === servico.id
+                      ? "bg-blue-600 text-white shadow-md ring-2 ring-blue-400"
+                      : "bg-gray-50 hover:bg-blue-100 text-gray-800"
+                  }`}
+                >
+                  <span>{servico.nome}</span>
+                  <span className="font-semibold text-sm">R$ {servico.preco.toFixed(2)}</span>
+                </button>
               ))
             ) : (
-              <p>Carregando serviços...</p>
+              <p className="text-gray-500">Nenhum serviço encontrado.</p>
             )}
           </div>
         </div>
@@ -221,59 +289,40 @@ const FormularioAgendamentoFuncionario: React.FC<FormularioAgendamentoFuncionari
 
       {passoAtual === 1 && (
         <div>
-          <h2 className="text-2xl font-semibold mb-4">Escolha o Cliente</h2>
-
-          {/* Barra de pesquisa */}
+          <h2 className="text-2xl font-semibold mb-6 text-gray-700">2. Escolha o Cliente</h2>
           <input
             type="text"
-            placeholder="Pesquisar pelo nome..."
+            placeholder="Pesquisar cliente pelo nome..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="border p-2 rounded mb-4 w-full"
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
+            className="border p-3 rounded-lg mb-6 w-full focus:ring-2 focus:ring-blue-500 transition-shadow"
           />
-
-          {/* Lista de clientes filtrados */}
           {filteredClientes.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto pr-2">
               {filteredClientes.map((cliente) => (
                 <div
                   key={cliente.id}
-                  className={`p-4 border rounded-lg shadow cursor-pointer ${
+                  className={`p-4 border rounded-lg shadow-sm cursor-pointer transition-all duration-150 ease-in-out transform hover:scale-105 ${
                     selectedClienteId === cliente.id
-                      ? "bg-blue-200" // Cliente selecionado
-                      : "hover:bg-blue-100"
+                      ? "bg-blue-600 text-white ring-2 ring-blue-400"
+                      : "bg-gray-50 hover:bg-blue-100 text-gray-800"
                   }`}
-                  onClick={() => handleClienteChange(cliente.id)} // Seleção do cliente
+                  onClick={() => handleClienteChange(cliente.id)}
                 >
                   <h3 className="text-xl font-semibold">{cliente.nome}</h3>
-                  <p>
-                    <strong>Email:</strong> {cliente.email}
-                  </p>
-                  <p>
-                    <strong>Telefone:</strong> {cliente.telefone}
-                  </p>
-                  <p>
-                    <strong>CPF:</strong> {cliente.cpf}
-                  </p>
-                  <p>
-                    <strong>Tipo de Usuário:</strong> {cliente.tipoDeUsuario}
-                  </p>
+                  <p className="text-sm">Email: {cliente.email}</p>
+                  <p className="text-sm">Telefone: {cliente.telefone}</p>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-gray-600">Nenhum cliente encontrado.</p>
+            <p className="text-gray-500">Nenhum cliente encontrado com o termo "{searchTerm}".</p>
           )}
-
-          {/* Exibição do nome do cliente selecionado */}
           {selectedClienteId && (
-            <div className="mt-4">
-              <h3 className="text-lg font-semibold">Cliente Selecionado:</h3>
-              <p>
-                {
-                  clientes.find((cliente) => cliente.id === selectedClienteId)
-                    ?.nome
-                }
+            <div className="mt-6 p-3 bg-blue-50 rounded-lg">
+              <h3 className="text-lg font-semibold text-blue-700">Cliente Selecionado:</h3>
+              <p className="text-blue-600">
+                {clientes.find((c) => c.id === selectedClienteId)?.nome}
               </p>
             </div>
           )}
@@ -282,96 +331,105 @@ const FormularioAgendamentoFuncionario: React.FC<FormularioAgendamentoFuncionari
 
       {passoAtual === 2 && (
         <div>
-          <h2 className="text-2xl font-semibold mb-4">Escolha a Data</h2>
-          <input
-            type="date"
-            className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={detalhesAgendamento.data}
-            onChange={(e) =>
-              setDetalhesAgendamento((prev) => ({
-                ...prev,
-                data: e.target.value,
-                horario: "", // Resetar horário ao mudar a data
-              }))
-            }
-          />
+          <h2 className="text-2xl font-semibold mb-6 text-gray-700">3. Escolha a Data</h2>
+           <DatePicker
+              selected={detalhesAgendamento.data ? new Date(detalhesAgendamento.data + "T00:00:00") : null}
+              onChange={(date: Date | null) => {
+                if (date) {
+                  const dataFormatada = date.toISOString().split("T")[0];
+                  setDetalhesAgendamento((prev) => ({
+                    ...prev,
+                    data: dataFormatada,
+                    horario: "",
+                  }));
+                } else {
+                    setDetalhesAgendamento(prev => ({ ...prev, data: "", horario: ""}));
+                }
+              }}
+              inline
+              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+              minDate={new Date()}
+              locale="pt-BR"
+              dateFormat="dd/MM/yyyy"
+            />
         </div>
       )}
 
       {passoAtual === 3 && (
         <div>
-          <h2 className="text-2xl font-semibold mb-4">Escolha o Horário</h2>
-
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              "09:00",
-              "09:50",
-              "10:40",
-              "13:00",
-              "13:50",
-              "14:40",
-              "15:30",
-              "16:20",
-            ].map((hora) => (
-              <button
-                key={hora}
-                className={`p-2 rounded-lg border text-center ${
-                  detalhesAgendamento.horario === hora
-                    ? "bg-blue-500 text-white"
-                    : "bg-gray-100 hover:bg-blue-100"
-                }`}
-                onClick={() =>
-                  setDetalhesAgendamento((prev) => ({ ...prev, horario: hora }))
-                }
-              >
-                {hora}
-              </button>
-            ))}
+          <h2 className="text-2xl font-semibold mb-6 text-gray-700">4. Escolha o Horário</h2>
+          {detalhesAgendamento.data ? (
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+            {horariosPadrao.map((hora) => {
+              const ocupado = horariosOcupados.includes(hora);
+              return (
+                <button
+                  key={hora}
+                  onClick={() =>
+                    !ocupado &&
+                    setDetalhesAgendamento((prev) => ({ ...prev, horario: hora }))
+                  }
+                  disabled={ocupado}
+                  className={`p-3 rounded-lg border text-sm font-medium transition-all duration-150 ease-in-out ${
+                    ocupado
+                      ? "bg-red-100 text-red-500 cursor-not-allowed line-through"
+                      : detalhesAgendamento.horario === hora
+                      ? "bg-blue-600 text-white shadow-md ring-2 ring-blue-400"
+                      : "bg-green-100 text-green-700 hover:bg-green-200 hover:shadow-sm"
+                  }`}
+                >
+                  {hora}
+                </button>
+              );
+            })}
+            {horariosPadrao.every(h => horariosOcupados.includes(h)) && horariosPadrao.length > 0 &&
+              <p className="col-span-full text-orange-500 mt-2">Todos os horários para esta data e profissional estão ocupados.</p>
+            }
           </div>
+          ) : (
+            <p className="text-gray-500">Por favor, selecione uma data no passo anterior.</p>
+          )}
         </div>
       )}
 
       {passoAtual === 4 && (
         <div>
-          <h2 className="text-2xl font-semibold mb-4">
-            Detalhes do Agendamento
-          </h2>
+          <h2 className="text-2xl font-semibold mb-6 text-gray-700">5. Observações (Opcional)</h2>
           <textarea
-            className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Detalhes adicionais..."
+            className="w-full p-3 border rounded-lg h-28 focus:ring-2 focus:ring-blue-500 transition-shadow"
+            placeholder="Alguma observação para este agendamento?"
             value={detalhesAgendamento.descricao}
-            onChange={(e) =>
-              setDetalhesAgendamento((prev) => ({
-                ...prev,
-                descricao: e.target.value,
-              }))
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => // Tipagem para textarea
+              setDetalhesAgendamento((prev) => ({ ...prev, descricao: e.target.value }))
             }
           />
         </div>
       )}
 
-      <div className="flex justify-between border-t pt-4">
-        {passoAtual > 0 && (
+      <div className="flex justify-between border-t pt-6 mt-8">
+        <button
+          className={`px-6 py-3 rounded-lg transition-colors text-white font-medium ${
+            passoAtual === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-gray-500 hover:bg-gray-600'
+          }`}
+          onClick={voltarPasso}
+          disabled={passoAtual === 0}
+        >
+          Voltar
+        </button>
+
+        {passoAtual < 4 ? (
           <button
-            className="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500"
-            onClick={voltarPasso}
-          >
-            Voltar
-          </button>
-        )}
-        {passoAtual === 4 ? (
-          <button
-            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg"
-            onClick={() => setMostrarModal(true)} // Abre o modal ao confirmar
-          >
-            Confirmar Agendamento
-          </button>
-        ) : (
-          <button
-            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg"
+            className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
             onClick={avancarPasso}
           >
             Próximo
+          </button>
+        ) : (
+          <button
+            className="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium"
+            onClick={() => setMostrarModal(true)}
+          >
+            {agendamento?.id ? "Confirmar Reagendamento" : "Confirmar Agendamento"}
           </button>
         )}
       </div>
@@ -380,22 +438,17 @@ const FormularioAgendamentoFuncionario: React.FC<FormularioAgendamentoFuncionari
         <ModalConfirmacao
           isOpen={mostrarModal}
           onClose={() => setMostrarModal(false)}
-          onConfirm={handleConfirmarAgendamento}
+          onConfirm={handleSubmit}
           detalhes={{
             servicoId: detalhesAgendamento.servicoId,
-            funcionario:
-              funcionarios.find((func) => func.id === funcionarioId)?.nome ||
-              "Funcionário Não Encontrado",
-            cliente:
-              clientes.find((cli) => cli.id === detalhesAgendamento.clienteId)
-                ?.nome || "Cliente Não Encontrado",
+            funcionario: funcionarioNome, // Usando a prop funcionarioNome
+            cliente: clientes.find((cli) => cli.id === detalhesAgendamento.clienteId)?.nome || "Cliente não selecionado",
             data: detalhesAgendamento.data,
             horario: detalhesAgendamento.horario,
             outros: detalhesAgendamento.descricao,
           }}
-          
-          servicosList={servicos}
-          
+          servicosList={servicos} // Passando a lista de serviços para o modal encontrar o nome
+          isEditing={!!agendamento?.id}
         />
       )}
     </div>

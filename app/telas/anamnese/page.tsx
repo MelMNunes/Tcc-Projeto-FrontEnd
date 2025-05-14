@@ -1,26 +1,64 @@
 "use client";
 
-import React, { useState } from "react";
-import Modal from "@/app/components/Modal/Modal";
+import React, { useState, useEffect } from "react";
+// import Modal from "@/app/components/Modal/Modal"; // REMOVER: O modal é controlado pelo pai
+
+// Interface para o payload que será enviado ao backend
+export interface AnamnesePayload { // Exportar para ser usado em funcionarios/page.tsx
+  id?: number; // ID da anamnese, opcional (presente para atualização)
+  agendamentoId: number;
+  clienteId: number;
+  dataRegistro: string; // Formato YYYY-MM-DD
+  idade: number | string; // Pode ser string no form, converter antes de enviar
+  genero: string;
+  queixaPrincipal: string;
+  tempoProblema: string;
+  tratamentoAnterior: string;
+  historia: string;
+  doencas: string; // Doenças separadas por vírgula
+  outraDoenca?: string;
+  cirurgiaRecente: string;
+  alergia: string; // "sim" ou "nao"
+  medicamentos?: string;
+  produtos?: string;
+  materiais?: string;
+  historicoFamiliar: string; // "sim" ou "nao"
+  historicoFamiliarEspecificar?: string;
+  habitos: string; // JSON string
+  saudePes: string; // JSON string
+  avaliacao: string; // JSON string
+  foto?: string | null; // Base64 string (sem prefixo)
+}
 
 interface FormularioAnamnesePageProps {
   agendamentoId: number;
+  clienteId: number;
   onClose: () => void;
+  // anamneseExistente deve ser Partial<AnamnesePayload> porque os campos como habitos, etc.
+  // virão como string JSON do backend (via AnamneseDTO) e serão parseados para objeto no estado local.
+  anamneseExistente?: Partial<AnamnesePayload>;
 }
+
 
 const FormularioAnamnesePage: React.FC<FormularioAnamnesePageProps> = ({
   agendamentoId,
+  clienteId,
   onClose,
+  anamneseExistente,
 }) => {
-  // Estados do formulário
-  const [dataRegistro, setDataRegistro] = useState<string>("");
+  console.log('Form Anamnese - Cliente ID:', clienteId, "Agendamento ID:", agendamentoId);
+  console.log('Anamnese Existente recebida no form:', anamneseExistente);
+
+
+  const [idAnamnese, setIdAnamnese] = useState<number | undefined>(undefined);
+  const [dataRegistro, setDataRegistro] = useState<string>(new Date().toISOString().split('T')[0]);
   const [idade, setIdade] = useState<string>("");
   const [genero, setGenero] = useState<string>("");
   const [queixaPrincipal, setQueixaPrincipal] = useState<string>("");
   const [tempoProblema, setTempoProblema] = useState<string>("");
   const [tratamentoAnterior, setTratamentoAnterior] = useState<string>("");
   const [historia, setHistoria] = useState<string>("");
-  const [doencas, setDoencas] = useState<string[]>([]);
+  const [doencasSelecionadas, setDoencasSelecionadas] = useState<string[]>([]);
   const [outraDoenca, setOutraDoenca] = useState<string>("");
   const [cirurgiaRecente, setCirurgiaRecente] = useState<string>("");
   const [alergia, setAlergia] = useState<string>("");
@@ -28,539 +66,570 @@ const FormularioAnamnesePage: React.FC<FormularioAnamnesePageProps> = ({
   const [produtos, setProdutos] = useState<string>("");
   const [materiais, setMateriais] = useState<string>("");
   const [historicoFamiliar, setHistoricoFamiliar] = useState<string>("");
-  const [historicoFamiliarEspecificar, setHistoricoFamiliarEspecificar] =
-    useState<string>("");
-  const [habitos, setHabitos] = useState({
-    atividadeFisica: "",
-    consomeAlcool: "",
-    fuma: "",
-    nivelEstresse: "",
-  });
-  const [saudePes, setSaudePes] = useState({
-    dorPes: "",
-    calos: "",
-    unhasEncravadas: "",
-    formigamento: "",
-    alteracaoCor: "",
-  });
-  const [avaliacao, setAvaliacao] = useState({
-    pele: "",
-    unhas: "",
-    calosidades: "",
-    tipoPisada: "",
-    edemas: "",
-    hidratacao: "",
-  });
-  const [anexos, setAnexos] = useState<File[]>([]);
+  const [historicoFamiliarEspecificar, setHistoricoFamiliarEspecificar] = useState<string>("");
+  
+  // Estados para objetos complexos
+  const [habitos, setHabitos] = useState({ atividadeFisica: "", consomeAlcool: "", fuma: "", nivelEstresse: "" });
+  const [saudePes, setSaudePes] = useState({ dorPes: "", calos: "", unhasEncravadas: "", formigamento: "", alteracaoCor: "" });
+  const [avaliacao, setAvaliacao] = useState({ pele: "", unhas: "", calosidades: "", tipoPisada: "", edemas: "", hidratacao: "" });
+  
+  const [anexoFoto, setAnexoFoto] = useState<File | null>(null);
+  const [fotoPreview, setFotoPreview] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  // Função de envio
-  const handleSubmit = async (e: React.FormEvent) => {
+  useEffect(() => {
+    if (anamneseExistente) {
+        console.log("Populando formulário com anamneseExistente:", anamneseExistente);
+        setIdAnamnese(anamneseExistente.id);
+        setDataRegistro(anamneseExistente.dataRegistro?.split("T")[0] || new Date().toISOString().split('T')[0]);
+        setIdade(anamneseExistente.idade?.toString() || "");
+        setGenero(anamneseExistente.genero || "");
+        setQueixaPrincipal(anamneseExistente.queixaPrincipal || "");
+        setTempoProblema(anamneseExistente.tempoProblema || "");
+        setTratamentoAnterior(anamneseExistente.tratamentoAnterior || "");
+        setHistoria(anamneseExistente.historia || "");
+        setDoencasSelecionadas(anamneseExistente.doencas ? anamneseExistente.doencas.split(", ") : []);
+        setOutraDoenca(anamneseExistente.outraDoenca || "");
+        setCirurgiaRecente(anamneseExistente.cirurgiaRecente || "");
+        setAlergia(anamneseExistente.alergia || "");
+        setMedicamentos(anamneseExistente.medicamentos || "");
+        setProdutos(anamneseExistente.produtos || "");
+        setMateriais(anamneseExistente.materiais || "");
+        setHistoricoFamiliar(anamneseExistente.historicoFamiliar || "");
+        setHistoricoFamiliarEspecificar(anamneseExistente.historicoFamiliarEspecificar || "");
+
+        const parseJsonField = (jsonString: string | undefined, defaultObject: object) => {
+            if (jsonString) {
+                try {
+                    return JSON.parse(jsonString);
+                } catch (e) {
+                    console.error("Erro ao parsear campo JSON:", jsonString, e);
+                    return defaultObject;
+                }
+            }
+            return defaultObject;
+        };
+
+        setHabitos(parseJsonField(anamneseExistente.habitos, { atividadeFisica: "", consomeAlcool: "", fuma: "", nivelEstresse: "" }));
+        setSaudePes(parseJsonField(anamneseExistente.saudePes, { dorPes: "", calos: "", unhasEncravadas: "", formigamento: "", alteracaoCor: "" }));
+        setAvaliacao(parseJsonField(anamneseExistente.avaliacao, { pele: "", unhas: "", calosidades: "", tipoPisada: "", edemas: "", hidratacao: "" }));
+
+        if (anamneseExistente.foto) {
+            setFotoPreview(`data:image/jpeg;base64,${anamneseExistente.foto}`);
+        } else {
+            setFotoPreview(null);
+        }
+        setAnexoFoto(null); // Limpa anexo de foto anterior ao carregar existente
+    } else {
+        // Resetar todos os estados para um formulário limpo
+        setIdAnamnese(undefined);
+        setDataRegistro(new Date().toISOString().split('T')[0]);
+        setIdade("");
+        setGenero("");
+        setQueixaPrincipal("");
+        setTempoProblema("");
+        setTratamentoAnterior("");
+        setHistoria("");
+        setDoencasSelecionadas([]);
+        setOutraDoenca("");
+        setCirurgiaRecente("");
+        setAlergia("");
+        setMedicamentos("");
+        setProdutos("");
+        setMateriais("");
+        setHistoricoFamiliar("");
+        setHistoricoFamiliarEspecificar("");
+        setHabitos({ atividadeFisica: "", consomeAlcool: "", fuma: "", nivelEstresse: "" });
+        setSaudePes({ dorPes: "", calos: "", unhasEncravadas: "", formigamento: "", alteracaoCor: "" });
+        setAvaliacao({ pele: "", unhas: "", calosidades: "", tipoPisada: "", edemas: "", hidratacao: "" });
+        setAnexoFoto(null);
+        setFotoPreview(null);
+    }
+  }, [anamneseExistente]);
+
+
+  const convertFileToBase64 = (file: File): Promise<string | null> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          resolve(reader.result.split(',')[1]); 
+        } else {
+          resolve(null); 
+        }
+      };
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
 
-    const anamneseData = {
+    if (!clienteId || !agendamentoId) {
+        alert("Cliente ID ou Agendamento ID estão ausentes. Não é possível salvar a anamnese.");
+        setIsSubmitting(false);
+        return;
+    }
+    if (!dataRegistro || !idade || !genero || !queixaPrincipal || !historia) {
+        alert("Por favor, preencha todos os campos obrigatórios: Data de Registro, Idade, Gênero, Queixa Principal e História.");
+        setIsSubmitting(false);
+        return;
+    }
+
+    let fotoBase64: string | null = null;
+    if (anexoFoto) {
+      try {
+        fotoBase64 = await convertFileToBase64(anexoFoto);
+      } catch (error) {
+        console.error("Erro ao converter imagem:", error);
+        alert("Erro ao processar a imagem. Tente novamente ou envie sem imagem.");
+        setIsSubmitting(false);
+        return;
+      }
+    } else if (idAnamnese && anamneseExistente?.foto) {
+        fotoBase64 = anamneseExistente.foto;
+    }
+
+    const payload: AnamnesePayload = {
+      id: idAnamnese === undefined ? null : idAnamnese,
       agendamentoId,
+      clienteId,
       dataRegistro,
-      idade: parseInt(idade, 10),
+      idade: parseInt(idade, 10) || 0,
       genero,
       queixaPrincipal,
       tempoProblema,
       tratamentoAnterior,
       historia,
-      doencas: doencas.join(", "),
-      outraDoenca,
+      doencas: doencasSelecionadas.join(", "),
+      outraDoenca: doencasSelecionadas.includes("Outra") ? outraDoenca : "",
       cirurgiaRecente,
       alergia,
-      medicamentos,
-      produtos,
-      materiais,
+      medicamentos: alergia === "sim" ? medicamentos : "",
+      produtos: alergia === "sim" ? produtos : "",
+      materiais: alergia === "sim" ? materiais : "",
       historicoFamiliar,
-      historicoFamiliarEspecificar,
+      historicoFamiliarEspecificar: historicoFamiliar === "sim" ? historicoFamiliarEspecificar : "",
       habitos: JSON.stringify(habitos),
       saudePes: JSON.stringify(saudePes),
       avaliacao: JSON.stringify(avaliacao),
+      foto: fotoBase64,
     };
 
+    // --- ADICIONAR CONSOLE LOGS AQUI ---
+    console.log("handleSubmitForm: Payload que será enviado para /api/anamnese/salvar ou /atualizar:", JSON.stringify(payload, null, 2));
+    console.log("payload.id:", payload.id);
+    console.log("handleSubmitForm: Detalhes chave para o backend:");
+    console.log("payload.id (para edição):", payload.id);
+    console.log("payload.agendamentoId:", payload.agendamentoId);
+    console.log("payload.clienteId:", payload.clienteId);
+    // --- FIM DOS CONSOLE LOGS ---
+
+
+    const isEditing = idAnamnese !== undefined;
+    const apiUrl = isEditing
+      ? `http://localhost:8080/api/anamnese/atualizar/${idAnamnese}`
+      : "http://localhost:8080/api/anamnese/salvar";
+    const method = isEditing ? "PUT" : "POST";
+
+    console.log(`Enviando para ${apiUrl} com método ${method}`);
+
     try {
-      const response = await fetch("http://localhost:8080/api/anamnese/criar", {
-        method: "POST",
+      const response = await fetch(apiUrl, {
+        method: method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(anamneseData),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText);
+        // --- MODIFICAR ESTA PARTE PARA MELHOR CAPTURA DE ERRO ---
+        const errorText = await response.text(); // Ler como texto primeiro
+        let detailedMessage = `Erro ${response.status}: ${response.statusText || 'Desconhecido'}`;
+
+        // Tenta usar o texto direto como mensagem, pois o backend pode estar enviando texto simples
+        if (errorText) {
+            detailedMessage = errorText;
+        } else {
+            // Se errorText for vazio, tenta parsear como JSON (caso raro para erros de texto)
+            try {
+                const errorJson = JSON.parse(errorText); // Isso provavelmente falhará se errorText for uma mensagem simples
+                detailedMessage = errorJson.message || errorJson.error || detailedMessage;
+            } catch (e) {
+                // Mantém detailedMessage como estava se não for JSON
+            }
+        }
+        console.error("Erro do backend ao salvar anamnese (texto da resposta):", errorText); // Log do texto puro
+        throw new Error(detailedMessage); // Lança o erro com a mensagem mais detalhada possível
+        // --- FIM DA MODIFICAÇÃO DE CAPTURA DE ERRO ---
       }
 
-      alert("Anamnese salva com sucesso!");
+      const responseData = await response.json(); // Supondo que sucesso retorna JSON
+      alert(`Anamnese ${isEditing ? 'atualizada' : 'salva'} com sucesso! ID: ${responseData.id}`);
       onClose();
     } catch (error) {
-      console.error("Erro ao salvar anamnese:", error);
-      alert("Erro ao salvar a anamnese.");
+      console.error("Erro ao salvar anamnese (no catch do frontend):", error);
+      alert(`Erro ao salvar a anamnese: ${(error as Error).message}`);
+    } finally {
+        setIsSubmitting(false);
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const filesArray = Array.from(e.target.files);
-      setAnexos((prev) => [...prev, ...filesArray]);
+  const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setAnexoFoto(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setAnexoFoto(null);
+      setFotoPreview(null);
     }
   };
 
-  const handleRemoveFile = (index: number) => {
-    setAnexos((prev) => prev.filter((_, i) => i !== index));
+  const handleRemoveFoto = () => {
+    setAnexoFoto(null);
+    setFotoPreview(null);
+    const inputFile = document.getElementById('foto-anamnese-input') as HTMLInputElement | null;
+    if (inputFile) {
+        inputFile.value = ""; 
+    }
   };
+
+  const handleDoencasChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value, checked } = e.target;
+    setDoencasSelecionadas((prev) =>
+      checked ? [...prev, value] : prev.filter((item) => item !== value)
+    );
+  };
+
+  const handleNestedStateChange = (
+    setState: React.Dispatch<React.SetStateAction<any>>, // eslint-disable-line @typescript-eslint/no-explicit-any
+    field: string,
+    value: string
+  ) => {
+    setState((prevState: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
+      ...prevState,
+      [field]: value,
+    }));
+  };
+
+
   return (
-    <Modal isOpen={true} onClose={onClose}>
-      <div className="p-8">
-        <h1 className="text-3xl font-bold mb-6">Formulário de Anamnese</h1>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* === Dados Iniciais === */}
-          <div>
-            <label className="block mb-2">Data de Registro:</label>
-            <input
-              type="date"
-              value={dataRegistro}
-              onChange={(e) => setDataRegistro(e.target.value)}
-              className="border rounded p-2 w-full"
-              required
-            />
-          </div>
+    <div className="p-6 md:p-8 max-h-[85vh] overflow-y-auto bg-gray-50">
+      <h1 className="text-3xl font-bold mb-8 text-center text-gray-700 border-b pb-4">
+        {idAnamnese ? "Editar Ficha de Anamnese" : "Nova Ficha de Anamnese"}
+      </h1>
+      <form onSubmit={handleSubmitForm} className="space-y-8">
 
-          <div>
-            <label className="block mb-2">Idade:</label>
-            <input
-              type="number"
-              value={idade}
-              onChange={(e) => setIdade(e.target.value)}
-              className="border rounded p-2 w-full"
-              required
-            />
-          </div>
-          <div>
-            <label className="block mb-2">Gênero:</label>
-            <select
-              value={genero}
-              onChange={(e) => setGenero(e.target.value)}
-              className="border rounded p-2 w-full"
-              required
-            >
-              <option value="">Selecione</option>
-              <option value="masculino">Masculino</option>
-              <option value="feminino">Feminino</option>
-              <option value="outro">Outro</option>
-            </select>
-          </div>
-
-          {/* === Informações do Cliente === */}
-          <h2 className="text-2xl font-semibold mt-6">
-            Informações do Cliente
-          </h2>
-          <div>
-            <label className="block mb-2">Queixa Principal:</label>
-            <input
-              type="text"
-              value={queixaPrincipal}
-              onChange={(e) => setQueixaPrincipal(e.target.value)}
-              className="border rounded p-2 w-full"
-              required
-            />
-          </div>
-          <div>
-            <label className="block mb-2">
-              Há quanto tempo está com esse problema?
-            </label>
-            <input
-              type="text"
-              value={tempoProblema}
-              onChange={(e) => setTempoProblema(e.target.value)}
-              className="border rounded p-2 w-full"
-            />
-          </div>
-          <div>
-            <label className="block mb-2">
-              Já fez algum tratamento antes? Qual?
-            </label>
-            <input
-              type="text"
-              value={tratamentoAnterior}
-              onChange={(e) => setTratamentoAnterior(e.target.value)}
-              className="border rounded p-2 w-full"
-            />
-          </div>
-          <div>
-            <label className="block mb-2">História:</label>
-            <textarea
-              value={historia}
-              onChange={(e) => setHistoria(e.target.value)}
-              className="border rounded p-2 w-full h-32"
-              required
-            />
-          </div>
-          <div>
-            <label className="block mb-2">
-              Possui alguma doença diagnosticada?
-            </label>
-            <select
-              multiple
-              value={doencas}
-              onChange={(e) => {
-                const opts = Array.from(e.target.options);
-                setDoencas(opts.filter((o) => o.selected).map((o) => o.value));
-              }}
-              className="border rounded p-2 w-full"
-            >
-              <option value="diabetes">Diabetes</option>
-              <option value="hipertensao">Hipertensão</option>
-              <option value="doenca_vascular">Doença Vascular</option>
-              <option value="outra">Outra</option>
-            </select>
-            {doencas.includes("outra") && (
-              <input
-                type="text"
-                placeholder="Especifique"
-                value={outraDoenca}
-                onChange={(e) => setOutraDoenca(e.target.value)}
-                className="border rounded p-2 w-full mt-2"
-              />
-            )}
-          </div>
-          <div>
-            <label className="block mb-2">Já passou por cirurgias?</label>
-            <select
-              value={cirurgiaRecente}
-              onChange={(e) => setCirurgiaRecente(e.target.value)}
-              className="border rounded p-2 w-full"
-            >
-              <option value="">Selecione</option>
-              <option value="sim">Sim</option>
-              <option value="nao">Não</option>
-            </select>
-          </div>
-
-          {/* === Alergias === */}
-          <div>
-            <label className="block mb-2">Possui alergias?</label>
-            <select
-              value={alergia}
-              onChange={(e) => setAlergia(e.target.value)}
-              className="border rounded p-2 w-full"
-            >
-              <option value="">Selecione</option>
-              <option value="sim">Sim</option>
-              <option value="nao">Não</option>
-            </select>
-            {alergia === "sim" && (
-              <div className="space-y-2 mt-2">
-                <input
-                  type="text"
-                  placeholder="Medicamentos"
-                  value={medicamentos}
-                  onChange={(e) => setMedicamentos(e.target.value)}
-                  className="border rounded p-2 w-full"
-                />
-                <input
-                  type="text"
-                  placeholder="Produtos"
-                  value={produtos}
-                  onChange={(e) => setProdutos(e.target.value)}
-                  className="border rounded p-2 w-full"
-                />
-                <input
-                  type="text"
-                  placeholder="Materiais"
-                  value={materiais}
-                  onChange={(e) => setMateriais(e.target.value)}
-                  className="border rounded p-2 w-full"
-                />
-              </div>
-            )}
-          </div>
-
-          {/* === Histórico Familiar === */}
-          <div>
-            <label className="block mb-2">Histórico familiar de doenças?</label>
-            <select
-              value={historicoFamiliar}
-              onChange={(e) => setHistoricoFamiliar(e.target.value)}
-              className="border rounded p-2 w-full"
-            >
-              <option value="">Selecione</option>
-              <option value="sim">Sim</option>
-              <option value="nao">Não</option>
-            </select>
-            {historicoFamiliar === "sim" && (
-              <input
-                type="text"
-                placeholder="Especifique"
-                value={historicoFamiliarEspecificar}
-                onChange={(e) =>
-                  setHistoricoFamiliarEspecificar(e.target.value)
-                }
-                className="border rounded p-2 w-full mt-2"
-              />
-            )}
-          </div>
-
-          {/* === Hábitos === */}
-          <h2 className="text-2xl font-semibold mt-6">Hábitos do Cliente</h2>
-          <div>
-            <label className="block mb-2">Pratica atividades físicas?</label>
-            <select
-              value={habitos.atividadeFisica}
-              onChange={(e) =>
-                setHabitos({ ...habitos, atividadeFisica: e.target.value })
-              }
-              className="border rounded p-2 w-full"
-            >
-              <option value="">Selecione</option>
-              <option value="sim">Sim</option>
-              <option value="nao">Não</option>
-            </select>
-          </div>
-          <div>
-            <label className="block mb-2">Consome álcool?</label>
-            <select
-              value={habitos.consomeAlcool}
-              onChange={(e) =>
-                setHabitos({ ...habitos, consomeAlcool: e.target.value })
-              }
-              className="border rounded p-2 w-full"
-            >
-              <option value="">Selecione</option>
-              <option value="sim">Sim</option>
-              <option value="nao">Não</option>
-            </select>
-          </div>
-          <div>
-            <label className="block mb-2">Fuma?</label>
-            <select
-              value={habitos.fuma}
-              onChange={(e) => setHabitos({ ...habitos, fuma: e.target.value })}
-              className="border rounded p-2 w-full"
-            >
-              <option value="">Selecione</option>
-              <option value="sim">Sim</option>
-              <option value="nao">Não</option>
-            </select>
-            <div>
-              <label className="block mb-2">Nível de estresse:</label>
-              <select
-                value={habitos.nivelEstresse}
-                onChange={(e) =>
-                  setHabitos({ ...habitos, nivelEstresse: e.target.value })
-                }
-                className="border rounded p-2 w-full"
-              >
-                <option value="">Selecione</option>
-                <option value="baixo">Baixo</option>
-                <option value="medio">Médio</option>
-                <option value="alto">Alto</option>
-              </select>
-            </div>
-          </div>
-
-          {/* === Saúde dos Pés === */}
-          <h2 className="text-2xl font-semibold mt-6">Saúde dos Pés</h2>
-          <div>
-            <label className="block mb-2">
-              Sente dor nos pés? Em qual região?
-            </label>
-            <input
-              type="text"
-              value={saudePes.dorPes}
-              onChange={(e) =>
-                setSaudePes({ ...saudePes, dorPes: e.target.value })
-              }
-              className="border rounded p-2 w-full"
-            />
-          </div>
-          <div>
-            <label className="block mb-2">
-              Já teve calos, rachaduras, micoses ou verrugas plantares?
-            </label>
-            <select
-              value={saudePes.calos}
-              onChange={(e) =>
-                setSaudePes({ ...saudePes, calos: e.target.value })
-              }
-              className="border rounded p-2 w-full"
-            >
-              <option value="">Selecione</option>
-              <option value="sim">Sim</option>
-              <option value="nao">Não</option>
-            </select>
-          </div>
-          <div>
-            <label className="block mb-2">
-              Possui unhas encravadas ou deformadas?
-            </label>
-            <select
-              value={saudePes.unhasEncravadas}
-              onChange={(e) =>
-                setSaudePes({ ...saudePes, unhasEncravadas: e.target.value })
-              }
-              className="border rounded p-2 w-full"
-            >
-              <option value="">Selecione</option>
-              <option value="sim">Sim</option>
-              <option value="nao">Não</option>
-            </select>
-          </div>
-          <div>
-            <label className="block mb-2">
-              Sente formigamento, dormência ou queimação nos pés?
-            </label>
-            <select
-              value={saudePes.formigamento}
-              onChange={(e) =>
-                setSaudePes({ ...saudePes, formigamento: e.target.value })
-              }
-              className="border rounded p-2 w-full"
-            >
-              <option value="">Selecione</option>
-              <option value="sim">Sim</option>
-              <option value="nao">Não</option>
-            </select>
-          </div>
-          <div>
-            <label className="block mb-2">
-              Alteração de cor ou temperatura dos pés?
-            </label>
-            <select
-              value={saudePes.alteracaoCor}
-              onChange={(e) =>
-                setSaudePes({ ...saudePes, alteracaoCor: e.target.value })
-              }
-              className="border rounded p-2 w-full"
-            >
-              <option value="">Selecione</option>
-              <option value="sim">Sim</option>
-              <option value="nao">Não</option>
-            </select>
-          </div>
-
-          {/* === Avaliação Visual === */}
-          <h2 className="text-2xl font-semibold mt-6">Avaliação Visual</h2>
-          <div>
-            <label className="block mb-2">Pele:</label>
-            <input
-              type="text"
-              value={avaliacao.pele}
-              onChange={(e) =>
-                setAvaliacao({ ...avaliacao, pele: e.target.value })
-              }
-              className="border rounded p-2 w-full"
-            />
-          </div>
-          <div>
-            <label className="block mb-2">Unhas:</label>
-            <input
-              type="text"
-              value={avaliacao.unhas}
-              onChange={(e) =>
-                setAvaliacao({ ...avaliacao, unhas: e.target.value })
-              }
-              className="border rounded p-2 w-full"
-            />
-          </div>
-          <div>
-            <label className="block mb-2">
-              Calosidades, fissuras ou micoses?
-            </label>
-            <input
-              type="text"
-              value={avaliacao.calosidades}
-              onChange={(e) =>
-                setAvaliacao({ ...avaliacao, calosidades: e.target.value })
-              }
-              className="border rounded p-2 w-full"
-            />
-          </div>
-          <div>
-            <label className="block mb-2">Tipo de pisada:</label>
-            <input
-              type="text"
-              value={avaliacao.tipoPisada}
-              onChange={(e) =>
-                setAvaliacao({ ...avaliacao, tipoPisada: e.target.value })
-              }
-              className="border rounded p-2 w-full"
-            />
-          </div>
-          <div>
-            <label className="block mb-2">Edemas:</label>
-            <input
-              type="text"
-              value={avaliacao.edemas}
-              onChange={(e) =>
-                setAvaliacao({ ...avaliacao, edemas: e.target.value })
-              }
-              className="border rounded p-2 w-full"
-            />
-          </div>
-          <div>
-            <label className="block mb-2">
-              Hidratação e sensibilidade da pele:
-            </label>
-            <input
-              type="text"
-              value={avaliacao.hidratacao}
-              onChange={(e) =>
-                setAvaliacao({ ...avaliacao, hidratacao: e.target.value })
-              }
-              className="border rounded p-2 w-full"
-            />
-          </div>
-
-          {/* === Anexos === */}
-          <div>
-            <label className="block mb-2">Anexar arquivos (fotos, PDFs):</label>
-            <input
-              type="file"
-              multiple
-              onChange={handleFileChange}
-              className="border rounded p-2 w-full"
-            />
-            <div className="mt-2 space-y-1">
-              {anexos.map((file, idx) => (
-                <div key={idx} className="flex justify-between items-center">
-                  <span className="truncate max-w-xs">{file.name}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveFile(idx)}
-                    className="text-red-500 hover:underline ml-2"
-                  >
-                    Remover
-                  </button>
+        <fieldset className="border p-4 rounded-md shadow-sm bg-white">
+            <legend className="text-xl font-semibold px-2 text-blue-600">Dados Iniciais</legend>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4 mt-2">
+                <div>
+                    <label htmlFor="dataRegistro" className="block text-sm font-medium text-gray-700 mb-1">Data de Registro:</label>
+                    <input id="dataRegistro" type="date" value={dataRegistro} onChange={(e) => setDataRegistro(e.target.value)}
+                    className="border rounded-md p-2 w-full focus:ring-blue-500 focus:border-blue-500 transition-colors" required />
                 </div>
-              ))}
+                <div>
+                    <label htmlFor="idade" className="block text-sm font-medium text-gray-700 mb-1">Idade:</label>
+                    <input id="idade" type="number" value={idade} onChange={(e) => setIdade(e.target.value)}
+                    className="border rounded-md p-2 w-full focus:ring-blue-500 focus:border-blue-500 transition-colors" required />
+                </div>
+                <div>
+                    <label htmlFor="genero" className="block text-sm font-medium text-gray-700 mb-1">Gênero:</label>
+                    <select id="genero" value={genero} onChange={(e) => setGenero(e.target.value)}
+                    className="border rounded-md p-2 w-full focus:ring-blue-500 focus:border-blue-500 transition-colors" required >
+                    <option value="">Selecione...</option>
+                    <option value="Masculino">Masculino</option>
+                    <option value="Feminino">Feminino</option>
+                    <option value="Outro">Outro</option>
+                    </select>
+                </div>
             </div>
-          </div>
+        </fieldset>
 
-          {/* Botão de Fechar Modal sem Salvar */}
-          <div className="flex justify-end mt-4">
-            <button
-              onClick={onClose} // Use onClose aqui
-              className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
-            >
-              Fechar
-            </button>
-          </div>
+        <fieldset className="border p-4 rounded-md shadow-sm bg-white">
+            <legend className="text-xl font-semibold px-2 text-blue-600">Informações da Queixa</legend>
+            <div className="space-y-4 mt-2">
+                <div>
+                    <label htmlFor="queixaPrincipal" className="block text-sm font-medium text-gray-700 mb-1">Queixa Principal:</label>
+                    <textarea id="queixaPrincipal" value={queixaPrincipal} onChange={(e) => setQueixaPrincipal(e.target.value)}
+                    className="border rounded-md p-2 w-full h-20 focus:ring-blue-500 focus:border-blue-500 transition-colors" required />
+                </div>
+                <div>
+                    <label htmlFor="tempoProblema" className="block text-sm font-medium text-gray-700 mb-1">Há quanto tempo está com esse problema?</label>
+                    <input id="tempoProblema" type="text" value={tempoProblema} onChange={(e) => setTempoProblema(e.target.value)}
+                    className="border rounded-md p-2 w-full focus:ring-blue-500 focus:border-blue-500 transition-colors" />
+                </div>
+                <div>
+                    <label htmlFor="tratamentoAnterior" className="block text-sm font-medium text-gray-700 mb-1">Já fez algum tratamento antes? Qual?</label>
+                    <input id="tratamentoAnterior" type="text" value={tratamentoAnterior} onChange={(e) => setTratamentoAnterior(e.target.value)}
+                    className="border rounded-md p-2 w-full focus:ring-blue-500 focus:border-blue-500 transition-colors" />
+                </div>
+                <div>
+                    <label htmlFor="historia" className="block text-sm font-medium text-gray-700 mb-1">História (descreva com detalhes):</label>
+                    <textarea id="historia" value={historia} onChange={(e) => setHistoria(e.target.value)}
+                    className="border rounded-md p-2 w-full h-24 focus:ring-blue-500 focus:border-blue-500 transition-colors" required />
+                </div>
+            </div>
+        </fieldset>
 
-          {/* Botão de Envio */}
+        <fieldset className="border p-4 rounded-md shadow-sm bg-white">
+            <legend className="text-xl font-semibold px-2 text-blue-600">Saúde Geral</legend>
+            <div className="space-y-4 mt-2">
+                <div>
+                    <span className="block text-sm font-medium text-gray-700 mb-1">Possui alguma doença diagnosticada?</span>
+                    <div className="mt-2 space-y-1">
+                        {["Diabetes", "Hipertensão", "Doença Vascular", "Outra"].map(d => (
+                            <label key={d} className="flex items-center space-x-3 cursor-pointer">
+                                <input type="checkbox" value={d} checked={doencasSelecionadas.includes(d)}
+                                    onChange={handleDoencasChange}
+                                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                />
+                                <span className="text-sm text-gray-700">{d}</span>
+                            </label>
+                        ))}
+                    </div>
+                    {doencasSelecionadas.includes("Outra") && (
+                    <input type="text" placeholder="Especifique outra doença" value={outraDoenca} onChange={(e) => setOutraDoenca(e.target.value)}
+                        className="border rounded-md p-2 w-full mt-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" />
+                    )}
+                </div>
+                <div>
+                    <label htmlFor="cirurgiaRecente" className="block text-sm font-medium text-gray-700 mb-1">Já passou por cirurgias recentemente? Se sim, qual(is) e quando?</label>
+                     <input id="cirurgiaRecente" type="text" value={cirurgiaRecente} onChange={(e) => setCirurgiaRecente(e.target.value)}
+                        className="border rounded-md p-2 w-full focus:ring-blue-500 focus:border-blue-500 transition-colors" />
+                </div>
+            </div>
+        </fieldset>
 
-          <div className="flex justify-end mt-6">
-            <button
-              type="submit"
-              className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600"
-            >
-              Salvar Anamnese
-            </button>
-          </div>
-        </form>
-      </div>
-    </Modal>
+        <fieldset className="border p-4 rounded-md shadow-sm bg-white">
+            <legend className="text-xl font-semibold px-2 text-blue-600">Alergias</legend>
+             <div className="space-y-4 mt-2">
+                <div>
+                    <label htmlFor="alergia" className="block text-sm font-medium text-gray-700 mb-1">Possui alergias?</label>
+                    <select id="alergia" value={alergia} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setAlergia(e.target.value)}
+                        className="border rounded-md p-2 w-full focus:ring-blue-500 focus:border-blue-500 transition-colors" >
+                        <option value="">Selecione...</option> <option value="sim">Sim</option> <option value="nao">Não</option>
+                    </select>
+                    {alergia === "sim" && (
+                    <div className="space-y-2 mt-3">
+                        <input type="text" placeholder="Alergia a Medicamentos (quais?)" value={medicamentos} onChange={(e) => setMedicamentos(e.target.value)}
+                        className="border rounded-md p-2 w-full focus:ring-blue-500 focus:border-blue-500 transition-colors" />
+                        <input type="text" placeholder="Alergia a Produtos (quais?)" value={produtos} onChange={(e) => setProdutos(e.target.value)}
+                        className="border rounded-md p-2 w-full focus:ring-blue-500 focus:border-blue-500 transition-colors" />
+                        <input type="text" placeholder="Alergia a Materiais (quais?)" value={materiais} onChange={(e) => setMateriais(e.target.value)}
+                        className="border rounded-md p-2 w-full focus:ring-blue-500 focus:border-blue-500 transition-colors" />
+                    </div>
+                    )}
+                </div>
+            </div>
+        </fieldset>
+
+        {/* === Histórico Familiar === */}
+        <fieldset className="border p-4 rounded-md shadow-sm bg-white">
+            <legend className="text-xl font-semibold px-2 text-blue-600">Histórico Familiar</legend>
+            <div className="space-y-4 mt-2">
+                <div>
+                    <label htmlFor="historicoFamiliar" className="block text-sm font-medium text-gray-700 mb-1">Doenças relevantes na família?</label>
+                    <select id="historicoFamiliar" value={historicoFamiliar} onChange={(e) => setHistoricoFamiliar(e.target.value)}
+                        className="border rounded-md p-2 w-full focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                        <option value="">Selecione...</option>
+                        <option value="sim">Sim</option>
+                        <option value="nao">Não</option>
+                    </select>
+                </div>
+                {historicoFamiliar === "sim" && (
+                    <div>
+                        <label htmlFor="historicoFamiliarEspecificar" className="block text-sm font-medium text-gray-700 mb-1">Quais doenças?</label>
+                        <input id="historicoFamiliarEspecificar" type="text" value={historicoFamiliarEspecificar} onChange={(e) => setHistoricoFamiliarEspecificar(e.target.value)}
+                            placeholder="Especifique as doenças familiares"
+                            className="border rounded-md p-2 w-full focus:ring-blue-500 focus:border-blue-500 transition-colors" />
+                    </div>
+                )}
+            </div>
+        </fieldset>
+
+        {/* === Hábitos === */}
+        <fieldset className="border p-4 rounded-md shadow-sm bg-white">
+            <legend className="text-xl font-semibold px-2 text-blue-600">Hábitos</legend>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mt-2">
+                <div>
+                    <label htmlFor="habitosAtividadeFisica" className="block text-sm font-medium text-gray-700 mb-1">Pratica atividade física?</label>
+                    <select id="habitosAtividadeFisica" value={habitos.atividadeFisica}
+                        onChange={(e) => handleNestedStateChange(setHabitos, "atividadeFisica", e.target.value)}
+                        className="border rounded-md p-2 w-full focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                        <option value="">Selecione...</option>
+                        <option value="sim">Sim</option>
+                        <option value="nao">Não</option>
+                        <option value="asvezes">Às vezes</option>
+                    </select>
+                </div>
+                <div>
+                    <label htmlFor="habitosConsomeAlcool" className="block text-sm font-medium text-gray-700 mb-1">Consome álcool?</label>
+                    <select id="habitosConsomeAlcool" value={habitos.consomeAlcool}
+                        onChange={(e) => handleNestedStateChange(setHabitos, "consomeAlcool", e.target.value)}
+                        className="border rounded-md p-2 w-full focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                        <option value="">Selecione...</option>
+                        <option value="sim_frequentemente">Sim, frequentemente</option>
+                        <option value="sim_socialmente">Sim, socialmente</option>
+                        <option value="nao">Não</option>
+                    </select>
+                </div>
+                <div>
+                    <label htmlFor="habitosFuma" className="block text-sm font-medium text-gray-700 mb-1">Fuma?</label>
+                    <select id="habitosFuma" value={habitos.fuma}
+                        onChange={(e) => handleNestedStateChange(setHabitos, "fuma", e.target.value)}
+                        className="border rounded-md p-2 w-full focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                        <option value="">Selecione...</option>
+                        <option value="sim">Sim</option>
+                        <option value="nao">Não</option>
+                        <option value="parou">Já fumou, mas parou</option>
+                    </select>
+                </div>
+                <div>
+                    <label htmlFor="habitosNivelEstresse" className="block text-sm font-medium text-gray-700 mb-1">Nível de Estresse:</label>
+                    <select id="habitosNivelEstresse" value={habitos.nivelEstresse}
+                        onChange={(e) => handleNestedStateChange(setHabitos, "nivelEstresse", e.target.value)}
+                        className="border rounded-md p-2 w-full focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                        <option value="">Selecione...</option>
+                        <option value="baixo">Baixo</option>
+                        <option value="medio">Médio</option>
+                        <option value="alto">Alto</option>
+                    </select>
+                </div>
+            </div>
+        </fieldset>
+
+        {/* === Saúde dos Pés === */}
+        <fieldset className="border p-4 rounded-md shadow-sm bg-white">
+            <legend className="text-xl font-semibold px-2 text-blue-600">Saúde dos Pés</legend>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mt-2">
+                <div>
+                    <label htmlFor="saudePesDorPes" className="block text-sm font-medium text-gray-700 mb-1">Sente dor nos pés?</label>
+                    <input id="saudePesDorPes" type="text" value={saudePes.dorPes}
+                        onChange={(e) => handleNestedStateChange(setSaudePes, "dorPes", e.target.value)}
+                        placeholder="Ex: Ao caminhar, constante, etc."
+                        className="border rounded-md p-2 w-full focus:ring-blue-500 focus:border-blue-500 transition-colors" />
+                </div>
+                <div>
+                    <label htmlFor="saudePesCalos" className="block text-sm font-medium text-gray-700 mb-1">Presença de calos/calosidades?</label>
+                    <input id="saudePesCalos" type="text" value={saudePes.calos}
+                        onChange={(e) => handleNestedStateChange(setSaudePes, "calos", e.target.value)}
+                        placeholder="Ex: Sim, no calcanhar; Não"
+                        className="border rounded-md p-2 w-full focus:ring-blue-500 focus:border-blue-500 transition-colors" />
+                </div>
+                <div>
+                    <label htmlFor="saudePesUnhasEncravadas" className="block text-sm font-medium text-gray-700 mb-1">Unhas encravadas?</label>
+                    <input id="saudePesUnhasEncravadas" type="text" value={saudePes.unhasEncravadas}
+                        onChange={(e) => handleNestedStateChange(setSaudePes, "unhasEncravadas", e.target.value)}
+                        placeholder="Ex: Sim, dedão esquerdo; Não"
+                        className="border rounded-md p-2 w-full focus:ring-blue-500 focus:border-blue-500 transition-colors" />
+                </div>
+                <div>
+                    <label htmlFor="saudePesFormigamento" className="block text-sm font-medium text-gray-700 mb-1">Formigamento ou dormência?</label>
+                    <input id="saudePesFormigamento" type="text" value={saudePes.formigamento}
+                        onChange={(e) => handleNestedStateChange(setSaudePes, "formigamento", e.target.value)}
+                        placeholder="Ex: Sim, nos dedos à noite; Não"
+                        className="border rounded-md p-2 w-full focus:ring-blue-500 focus:border-blue-500 transition-colors" />
+                </div>
+                <div className="md:col-span-2">
+                    <label htmlFor="saudePesAlteracaoCor" className="block text-sm font-medium text-gray-700 mb-1">Alteração de cor na pele dos pés?</label>
+                    <input id="saudePesAlteracaoCor" type="text" value={saudePes.alteracaoCor}
+                        onChange={(e) => handleNestedStateChange(setSaudePes, "alteracaoCor", e.target.value)}
+                        placeholder="Ex: Palidez, vermelhidão, manchas escuras"
+                        className="border rounded-md p-2 w-full focus:ring-blue-500 focus:border-blue-500 transition-colors" />
+                </div>
+            </div>
+        </fieldset>
+
+        {/* === Avaliação Visual (Profissional) === */}
+        <fieldset className="border p-4 rounded-md shadow-sm bg-white">
+            <legend className="text-xl font-semibold px-2 text-blue-600">Avaliação Visual (Profissional)</legend>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mt-2">
+                <div>
+                    <label htmlFor="avaliacaoPele" className="block text-sm font-medium text-gray-700 mb-1">Aspecto da Pele:</label>
+                    <input id="avaliacaoPele" type="text" value={avaliacao.pele}
+                        onChange={(e) => handleNestedStateChange(setAvaliacao, "pele", e.target.value)}
+                        placeholder="Ex: Ressecada, fina, íntegra"
+                        className="border rounded-md p-2 w-full focus:ring-blue-500 focus:border-blue-500 transition-colors" />
+                </div>
+                <div>
+                    <label htmlFor="avaliacaoUnhas" className="block text-sm font-medium text-gray-700 mb-1">Aspecto das Unhas:</label>
+                    <input id="avaliacaoUnhas" type="text" value={avaliacao.unhas}
+                        onChange={(e) => handleNestedStateChange(setAvaliacao, "unhas", e.target.value)}
+                        placeholder="Ex: Quebradiças, espessas, com micose"
+                        className="border rounded-md p-2 w-full focus:ring-blue-500 focus:border-blue-500 transition-colors" />
+                </div>
+                <div>
+                    <label htmlFor="avaliacaoCalosidades" className="block text-sm font-medium text-gray-700 mb-1">Calosidades:</label>
+                    <input id="avaliacaoCalosidades" type="text" value={avaliacao.calosidades}
+                        onChange={(e) => handleNestedStateChange(setAvaliacao, "calosidades", e.target.value)}
+                        placeholder="Localização e tipo"
+                        className="border rounded-md p-2 w-full focus:ring-blue-500 focus:border-blue-500 transition-colors" />
+                </div>
+                <div>
+                    <label htmlFor="avaliacaoTipoPisada" className="block text-sm font-medium text-gray-700 mb-1">Tipo de Pisada:</label>
+                    <input id="avaliacaoTipoPisada" type="text" value={avaliacao.tipoPisada}
+                        onChange={(e) => handleNestedStateChange(setAvaliacao, "tipoPisada", e.target.value)}
+                        placeholder="Ex: Pronada, supinada, neutra"
+                        className="border rounded-md p-2 w-full focus:ring-blue-500 focus:border-blue-500 transition-colors" />
+                </div>
+                <div>
+                    <label htmlFor="avaliacaoEdemas" className="block text-sm font-medium text-gray-700 mb-1">Edemas (Inchaços):</label>
+                    <input id="avaliacaoEdemas" type="text" value={avaliacao.edemas}
+                        onChange={(e) => handleNestedStateChange(setAvaliacao, "edemas", e.target.value)}
+                        placeholder="Presença, localização, intensidade"
+                        className="border rounded-md p-2 w-full focus:ring-blue-500 focus:border-blue-500 transition-colors" />
+                </div>
+                <div>
+                    <label htmlFor="avaliacaoHidratacao" className="block text-sm font-medium text-gray-700 mb-1">Nível de Hidratação:</label>
+                    <input id="avaliacaoHidratacao" type="text" value={avaliacao.hidratacao}
+                        onChange={(e) => handleNestedStateChange(setAvaliacao, "hidratacao", e.target.value)}
+                        placeholder="Ex: Boa, regular, ruim"
+                        className="border rounded-md p-2 w-full focus:ring-blue-500 focus:border-blue-500 transition-colors" />
+                </div>
+            </div>
+        </fieldset>
+
+
+        <fieldset className="border p-4 rounded-md shadow-sm bg-white">
+            <legend className="text-xl font-semibold px-2 text-blue-600">Anexar Foto (Opcional)</legend>
+            <div className="mt-2">
+                <label htmlFor="foto-anamnese-input" className="block text-sm font-medium text-gray-700 mb-1">Selecione uma foto (Ex: da área afetada):</label>
+                <input id="foto-anamnese-input" type="file" accept="image/*" onChange={handleFotoChange}
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" />
+                {fotoPreview && (
+                <div className="mt-4 p-2 border rounded-md inline-block">
+                    <p className="text-sm font-medium text-gray-700 mb-1">Pré-visualização:</p>
+                    <img src={fotoPreview} alt="Preview da foto da anamnese" className="mt-1 rounded-md border max-w-xs h-auto shadow-sm" />
+                    <button type="button" onClick={handleRemoveFoto}
+                    className="mt-2 text-xs text-red-600 hover:text-red-800 hover:underline">Remover foto</button>
+                </div>
+                )}
+            </div>
+        </fieldset>
+
+
+        <div className="flex flex-col sm:flex-row justify-end items-center mt-10 pt-6 border-t gap-3">
+          <button type="button" onClick={onClose}
+            className="w-full sm:w-auto px-6 py-2.5 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors font-medium text-sm">
+            Cancelar
+          </button>
+          <button type="submit" disabled={isSubmitting}
+            className={`w-full sm:w-auto px-8 py-2.5 text-white rounded-md transition-colors font-medium text-sm ${
+                isSubmitting ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+            }`}
+          >
+            {isSubmitting ? "Salvando..." : (idAnamnese ? "Atualizar Anamnese" : "Salvar Anamnese")}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 };
 

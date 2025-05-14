@@ -35,7 +35,7 @@ export const getAgendamentosByClienteId = async (clienteId) => {
   try {
     console.log("Chamando API:", `/agendamentos/clientes/${clienteId}`);
     const response = await api.get(`/agendamentos/clientes/${clienteId}`);
-    return response.data; // Retorna os dados diretamente
+    return response.data;
   } catch (error) {
     console.error("Erro ao buscar agendamentos:", error);
     throw error;

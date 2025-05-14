@@ -102,12 +102,16 @@ const LoginCadastro = () => {
         localStorage.setItem("tipoDeUsuario", response.tipoDeUsuario);
         localStorage.setItem("nome", response.nome);
         localStorage.setItem("id", response.id);
+        localStorage.setItem("cpf", response.cpf);
+        localStorage.setItem("telefone", response.telefone);
         localStorage.setItem(
           "user",
           JSON.stringify({
             nome: response.nome,
             email: email,
             tipoDeUsuario: response.tipoDeUsuario,
+            cpf: response.cpf,
+            telefone: response.telefone,
           })
         );
 

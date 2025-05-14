@@ -1,69 +1,70 @@
+// Em ModalConfirmacao.tsx
+
+interface ModalDetalhes {
+  cliente: string;
+  funcionario: string;
+  servicoId: number | null; // Mudou de nome para ID
+  data: string;
+  horario: string;
+  outros?: string;
+}
+
+interface ServicoParaModal {
+    id: number;
+    nome: string;
+    // preco: number; // Se precisar do preço no modal
+}
+
 interface ModalConfirmacaoProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => Promise<void>; // Modificado para suportar async
-  detalhes: {
-    servicoId: number | null;
-    funcionario: string;
-    cliente: string;
-    data: string;
-    horario: string;
-    outros: string;
-  };
-  servicosList: { id: number; nome: string; preco: number }[];
+  onConfirm: () => void;
+  detalhes: ModalDetalhes;
+  servicosList: ServicoParaModal[]; // Lista de serviços
+  isEditing?: boolean; // Nova prop
 }
 
-const ModalConfirmacao = ({
+const ModalConfirmacao: React.FC<ModalConfirmacaoProps> = ({
   isOpen,
   onClose,
   onConfirm,
   detalhes,
   servicosList,
-}: ModalConfirmacaoProps) => {
-  if (!isOpen) return null; // Se o modal não estiver aberto, não renderiza nada
+  isEditing,
+}) => {
+  if (!isOpen) return null;
 
-  const servico = servicosList.find((s) => s.id === detalhes.servicoId);
+  const servicoSelecionado = servicosList.find(s => s.id === detalhes.servicoId);
+  const nomeServico = servicoSelecionado ? servicoSelecionado.nome : "Serviço não informado";
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white p-6 rounded-2xl shadow-lg w-96">
-        <h2 className="text-xl font-semibold mb-4">Confirmação de Agendamento</h2>
-        <p>
-          <strong>Serviço Escolhido:</strong>
-        </p>
-        <ul className="list-disc list-inside">
-          {servico ? (
-            <li>{`${servico.nome} - R$ ${servico.preco.toFixed(2)}`}</li>
-          ) : (
-            <li>Serviço não encontrado</li>
-          )}
-        </ul>
-        <p>
-          <strong>Funcionário:</strong> {detalhes.funcionario}
-        </p>
-        <p>
-          <strong>Data:</strong> {detalhes.data}
-        </p>
-        <p>
-          <strong>Horário:</strong> {detalhes.horario}
-        </p>
-        <p>
-          <strong>Detalhes:</strong> {detalhes.outros}
-        </p>
-        <div className="flex justify-end mt-4 gap-2">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4 z-50">
+      <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full">
+        <h2 className="text-2xl font-semibold mb-4 text-gray-800">
+          {isEditing ? "Confirmar Reagendamento?" : "Confirmar Agendamento?"}
+        </h2>
+        <div className="space-y-2 text-gray-700">
+          <p><strong>Cliente:</strong> {detalhes.cliente}</p>
+          <p><strong>Profissional:</strong> {detalhes.funcionario}</p>
+          <p><strong>Serviço:</strong> {nomeServico}</p>
+          <p><strong>Data:</strong> {detalhes.data ? new Date(detalhes.data + "T00:00:00").toLocaleDateString('pt-BR') : 'N/A'}</p>
+          <p><strong>Horário:</strong> {detalhes.horario || 'N/A'}</p>
+          {detalhes.outros && <p><strong>Observações:</strong> {detalhes.outros}</p>}
+        </div>
+        <div className="flex justify-end space-x-3 mt-6">
           <button
-            className="px-4 py-2 bg-red-500 text-white rounded-lg"
-            onClick={onClose} // Fecha o modal ao clicar em Cancelar
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors"
           >
             Cancelar
           </button>
           <button
-            className="px-4 py-2 bg-green-500 text-white rounded-lg"
-            onClick={async () => {
-              await onConfirm(); // Aguarda a requisição ser concluída antes de fechar o modal
-            }}
+            onClick={onConfirm}
+            className={`px-4 py-2 text-white rounded-md transition-colors ${
+              isEditing ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-green-500 hover:bg-green-600'
+            }`}
           >
-            Confirmar
+            {isEditing ? "Reagendar" : "Confirmar"}
           </button>
         </div>
       </div>
