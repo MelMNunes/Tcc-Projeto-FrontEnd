@@ -1,4 +1,3 @@
-// page.tsx
 "use client";
 
 import LandingHeader from "./landing/LandingHeader";
@@ -7,16 +6,11 @@ import React from "react";
 
 const Page = () => {
   return (
-    <div className="flex flex-col min-h-screen pt-16"> {/* pt-16 para garantir que o conteúdo não fique escondido atrás do header fixo */}
+    <div className="flex flex-col min-h-screen pt-16"> 
       <LandingHeader />
-      {/* <div>
-        <Cliente />
-      </div> */}
       <main className="flex-grow">
         <LandingPage />
-        {/* Adicione mais conteúdo aqui */}
       </main>
-
     </div>
   );
 };

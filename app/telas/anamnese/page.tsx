@@ -1,41 +1,37 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-// import Modal from "@/app/components/Modal/Modal"; // REMOVER: O modal é controlado pelo pai
 
-// Interface para o payload que será enviado ao backend
-export interface AnamnesePayload { // Exportar para ser usado em funcionarios/page.tsx
-  id?: number; // ID da anamnese, opcional (presente para atualização)
+export interface AnamnesePayload { 
+  id?: number; 
   agendamentoId: number;
   clienteId: number;
-  dataRegistro: string; // Formato YYYY-MM-DD
-  idade: number | string; // Pode ser string no form, converter antes de enviar
+  dataRegistro: string; 
+  idade: number | string; 
   genero: string;
   queixaPrincipal: string;
   tempoProblema: string;
   tratamentoAnterior: string;
   historia: string;
-  doencas: string; // Doenças separadas por vírgula
+  doencas: string; 
   outraDoenca?: string;
   cirurgiaRecente: string;
-  alergia: string; // "sim" ou "nao"
+  alergia: string; 
   medicamentos?: string;
   produtos?: string;
   materiais?: string;
-  historicoFamiliar: string; // "sim" ou "nao"
+  historicoFamiliar: string;
   historicoFamiliarEspecificar?: string;
-  habitos: string; // JSON string
-  saudePes: string; // JSON string
-  avaliacao: string; // JSON string
-  foto?: string | null; // Base64 string (sem prefixo)
+  habitos: string;
+  saudePes: string; 
+  avaliacao: string; 
+  foto?: string | null; 
 }
 
 interface FormularioAnamnesePageProps {
   agendamentoId: number;
   clienteId: number;
   onClose: () => void;
-  // anamneseExistente deve ser Partial<AnamnesePayload> porque os campos como habitos, etc.
-  // virão como string JSON do backend (via AnamneseDTO) e serão parseados para objeto no estado local.
   anamneseExistente?: Partial<AnamnesePayload>;
 }
 
@@ -67,8 +63,7 @@ const FormularioAnamnesePage: React.FC<FormularioAnamnesePageProps> = ({
   const [materiais, setMateriais] = useState<string>("");
   const [historicoFamiliar, setHistoricoFamiliar] = useState<string>("");
   const [historicoFamiliarEspecificar, setHistoricoFamiliarEspecificar] = useState<string>("");
-  
-  // Estados para objetos complexos
+
   const [habitos, setHabitos] = useState({ atividadeFisica: "", consomeAlcool: "", fuma: "", nivelEstresse: "" });
   const [saudePes, setSaudePes] = useState({ dorPes: "", calos: "", unhasEncravadas: "", formigamento: "", alteracaoCor: "" });
   const [avaliacao, setAvaliacao] = useState({ pele: "", unhas: "", calosidades: "", tipoPisada: "", edemas: "", hidratacao: "" });
@@ -119,9 +114,8 @@ const FormularioAnamnesePage: React.FC<FormularioAnamnesePageProps> = ({
         } else {
             setFotoPreview(null);
         }
-        setAnexoFoto(null); // Limpa anexo de foto anterior ao carregar existente
+        setAnexoFoto(null); 
     } else {
-        // Resetar todos os estados para um formulário limpo
         setIdAnamnese(undefined);
         setDataRegistro(new Date().toISOString().split('T')[0]);
         setIdade("");
@@ -218,14 +212,13 @@ const handleSubmitForm = async (e: React.FormEvent) => {
       foto: fotoBase64,
     };
 
-    // --- ADICIONAR CONSOLE LOGS AQUI ---
+
     console.log("handleSubmitForm: Payload que será enviado para /api/anamnese/salvar ou /atualizar:", JSON.stringify(payload, null, 2));
     console.log("payload.id:", payload.id);
     console.log("handleSubmitForm: Detalhes chave para o backend:");
     console.log("payload.id (para edição):", payload.id);
     console.log("payload.agendamentoId:", payload.agendamentoId);
     console.log("payload.clienteId:", payload.clienteId);
-    // --- FIM DOS CONSOLE LOGS ---
 
 
     const isEditing = idAnamnese !== undefined;
@@ -244,28 +237,24 @@ const handleSubmitForm = async (e: React.FormEvent) => {
       });
 
       if (!response.ok) {
-        // --- MODIFICAR ESTA PARTE PARA MELHOR CAPTURA DE ERRO ---
-        const errorText = await response.text(); // Ler como texto primeiro
+        const errorText = await response.text(); 
         let detailedMessage = `Erro ${response.status}: ${response.statusText || 'Desconhecido'}`;
 
-        // Tenta usar o texto direto como mensagem, pois o backend pode estar enviando texto simples
+  
         if (errorText) {
             detailedMessage = errorText;
         } else {
-            // Se errorText for vazio, tenta parsear como JSON (caso raro para erros de texto)
             try {
-                const errorJson = JSON.parse(errorText); // Isso provavelmente falhará se errorText for uma mensagem simples
+                const errorJson = JSON.parse(errorText);
                 detailedMessage = errorJson.message || errorJson.error || detailedMessage;
             } catch (e) {
-                // Mantém detailedMessage como estava se não for JSON
             }
         }
-        console.error("Erro do backend ao salvar anamnese (texto da resposta):", errorText); // Log do texto puro
-        throw new Error(detailedMessage); // Lança o erro com a mensagem mais detalhada possível
-        // --- FIM DA MODIFICAÇÃO DE CAPTURA DE ERRO ---
+        console.error("Erro do backend ao salvar anamnese (texto da resposta):", errorText);
+        throw new Error(detailedMessage);
       }
 
-      const responseData = await response.json(); // Supondo que sucesso retorna JSON
+      const responseData = await response.json(); 
       alert(`Anamnese ${isEditing ? 'atualizada' : 'salva'} com sucesso! ID: ${responseData.id}`);
       onClose();
     } catch (error) {

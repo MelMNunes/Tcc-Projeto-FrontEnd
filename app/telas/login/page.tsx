@@ -85,7 +85,6 @@ const LoginCadastro = () => {
     e.preventDefault();
     setError("");
 
-    // Verifica se os campos estão vazios
     if (!email || !password) {
       setError("Por favor, preencha todos os campos.");
       return;
@@ -94,10 +93,9 @@ const LoginCadastro = () => {
     try {
       const response = await login({ login: email, senha: password });
 
-      console.log("Resposta do login:", response); // Verificar o que está sendo retornado
+      console.log("Resposta do login:", response); 
 
       if (response.token) {
-        // Código para armazenar o token e redirecionar o usuário
         localStorage.setItem("token", response.token);
         localStorage.setItem("tipoDeUsuario", response.tipoDeUsuario);
         localStorage.setItem("nome", response.nome);
@@ -135,13 +133,11 @@ const LoginCadastro = () => {
             router.push("/");
         }
       } else {
-        // Aqui você pode adicionar lógica para mensagens de erro específicas
         setError("Erro ao fazer login. Verifique suas credenciais.");
       }
     } catch (err) {
       console.error("Erro no login:", err);
 
-      // Aqui você pode verificar se o erro tem uma mensagem específica
       if (err instanceof Error) {
         if (err.message.includes("email")) {
           setError("Email incorreto. Tente novamente.");
@@ -160,7 +156,6 @@ const LoginCadastro = () => {
     e.preventDefault();
     setError("");
   
-    // Verifica se os campos estão vazios
     if (
       !nome ||
       !email ||
@@ -193,7 +188,7 @@ const LoginCadastro = () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`, // Caso precise de autenticação
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify({
             nome,
@@ -205,14 +200,13 @@ const LoginCadastro = () => {
         }
       );
   
-      // Verifica se a resposta tem conteúdo JSON válido
       const contentType = response.headers.get("Content-Type");
       let data = null;
   
       if (contentType && contentType.includes("application/json")) {
         data = await response.json();
       } else {
-        data = await response.text(); // Caso o servidor retorne texto puro
+        data = await response.text(); 
         console.warn("Resposta do servidor não é JSON:", data);
       }
   

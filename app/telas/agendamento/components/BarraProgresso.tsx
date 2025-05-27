@@ -1,4 +1,3 @@
-// Componente de barra de progresso
 import React from "react";
 
 interface BarraProgressoProps {
@@ -20,4 +19,3 @@ interface BarraProgressoProps {
   };
   
   export default BarraProgresso;
-  

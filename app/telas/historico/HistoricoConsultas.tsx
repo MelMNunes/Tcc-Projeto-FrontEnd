@@ -1,1 +1,0 @@
-// Tela do histórico de consultas

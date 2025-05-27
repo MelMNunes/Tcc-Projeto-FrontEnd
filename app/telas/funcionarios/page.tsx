@@ -4,12 +4,11 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import FormularioAgendamentoFuncionario from "../agendamento/formularioFuncionario/FormularioFuncionario";
 import { getUsuarioById } from "@/app/services/api";
-import Modal from "@/app/components/Modal/Modal"; // Seu componente Modal genérico
+import Modal from "@/app/components/Modal/Modal"; 
 import FormularioAnamnesePage, {
   AnamnesePayload,
-} from "@/app/telas/anamnese/page"; // Importa o formulário de anamnese
+} from "@/app/telas/anamnese/page";
 
-// --- ÍCONES ---
 const CalendarDaysIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -112,7 +111,6 @@ const EyeIcon = () => (
   </svg>
 );
 
-// --- TIPAGENS ---
 interface ConsultaAgendamento {
   id: number;
   dataHora: string;

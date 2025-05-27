@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import ModalConfirmacao from "../components/ModalConfirmacao"; // Verifique o caminho
+import ModalConfirmacao from "../components/ModalConfirmacao";
 import DatePicker, { registerLocale } from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import ptBR from 'date-fns/locale/pt-BR';
@@ -11,8 +11,8 @@ interface Props {
   clienteId: number;
   passoAtual: number;
   setPassoAtual: React.Dispatch<React.SetStateAction<number>>;
-  agendamentoIdParaEditar?: number | null; // ID do agendamento para edição
-  dadosIniciaisAgendamento?: {           // Dados para pré-preencher
+  agendamentoIdParaEditar?: number | null; 
+  dadosIniciaisAgendamento?: {        
     funcionarioId: number | null;
     funcionarioNome: string;
     servicoId: number | null;
@@ -21,7 +21,7 @@ interface Props {
     horario: string;
     descricao: string;
   };
-  onAgendamentoConcluido: () => void;     // Callback após sucesso
+  onAgendamentoConcluido: () => void;   
 }
 
 interface Funcionario {
@@ -61,8 +61,6 @@ const FormularioAgendamento: React.FC<Props> = ({
     descricao: "",
   });
 
-  // Efeito para carregar dados iniciais do formulário (funcionários, serviços)
-  // e preencher com dadosIniciaisAgendamento se for uma edição
   useEffect(() => {
     const fetchDadosEssenciais = async () => {
       setLoadingDadosIniciais(true);
@@ -70,7 +68,7 @@ const FormularioAgendamento: React.FC<Props> = ({
         const [funcionariosRes, servicosRes, clienteRes] = await Promise.all([
           fetch("http://localhost:8080/api/usuarios/agendamento/funcionarios"),
           fetch("http://localhost:8080/api/servicos/listar"),
-          fetch(`http://localhost:8080/api/usuarios/${clienteId}`) // Para pegar o nome do cliente para o modal
+          fetch(`http://localhost:8080/api/usuarios/${clienteId}`) 
         ]);
 
         if (!funcionariosRes.ok) throw new Error('Falha ao buscar funcionários');
@@ -87,8 +85,6 @@ const FormularioAgendamento: React.FC<Props> = ({
         setServicos(servicosData);
         setClienteNome(clienteInfo.nome || "Cliente");
 
-
-        // Preenche o formulário se for uma edição (dadosIniciaisAgendamento)
         if (dadosIniciaisAgendamento) {
           setDetalhesAgendamento({
             funcionarioId: dadosIniciaisAgendamento.funcionarioId || null,
@@ -100,7 +96,7 @@ const FormularioAgendamento: React.FC<Props> = ({
             descricao: dadosIniciaisAgendamento.descricao || "",
           });
         } else {
-        // Limpa para novo agendamento
+
           setDetalhesAgendamento({
             funcionarioId: null, funcionarioNome: "", servicoId: null,
             servicoNome: "", data: "", horario: "", descricao: ""
@@ -109,17 +105,14 @@ const FormularioAgendamento: React.FC<Props> = ({
 
       } catch (err) {
         console.error("Erro ao carregar dados essenciais para o formulário:", err);
-        // Tratar erro (ex: mostrar mensagem para o usuário)
       } finally {
         setLoadingDadosIniciais(false);
       }
     };
 
     fetchDadosEssenciais();
-  }, [clienteId, dadosIniciaisAgendamento]); // Depende de dadosIniciaisAgendamento para reagir a um reagendamento
+  }, [clienteId, dadosIniciaisAgendamento]); 
 
-
-  // Efeito para buscar horários ocupados
   useEffect(() => {
     const buscarHorariosOcupados = async () => {
       if (!detalhesAgendamento.data || !detalhesAgendamento.funcionarioId) {
@@ -134,8 +127,6 @@ const FormularioAgendamento: React.FC<Props> = ({
         if (!response.ok) {
           const errorText = await response.text();
           console.warn(`Erro ao buscar horários (${response.status}): ${errorText}`);
-          // Se a API retorna 404 para "sem horários" em vez de array vazio, ajuste aqui.
-          // Por enquanto, vamos assumir que um erro significa que não há horários ou falha.
           setHorariosOcupados([]);
           return;
         }
@@ -144,7 +135,6 @@ const FormularioAgendamento: React.FC<Props> = ({
           new Date(a.dataHora).toLocaleTimeString('pt-BR', {
             hour: "2-digit",
             minute: "2-digit",
-            // hour12: false, // Garante formato 24h se a API não retornar assim
           })
         );
         setHorariosOcupados(ocupados);
@@ -156,13 +146,12 @@ const FormularioAgendamento: React.FC<Props> = ({
       }
     };
 
-    if(passoAtual === 2) { // Busca horários apenas se estiver no passo de data/hora
+    if(passoAtual === 2) { 
         buscarHorariosOcupados();
     }
   }, [detalhesAgendamento.data, detalhesAgendamento.funcionarioId, passoAtual]);
 
   const avancarPasso = () => {
-    // Validações específicas de cada passo
     if (passoAtual === 0 && !detalhesAgendamento.funcionarioId) {
       alert("Por favor, selecione um profissional."); return;
     }
@@ -172,7 +161,7 @@ const FormularioAgendamento: React.FC<Props> = ({
     if (passoAtual === 2 && (!detalhesAgendamento.data || !detalhesAgendamento.horario)) {
       alert("Por favor, selecione data e horário."); return;
     }
-    setPassoAtual((prev) => Math.min(prev + 1, 3)); // Não ir além do último passo
+    setPassoAtual((prev) => Math.min(prev + 1, 3));
   };
 
   const voltarPasso = () => {
@@ -190,10 +179,9 @@ const FormularioAgendamento: React.FC<Props> = ({
       clienteId: clienteId,
       funcionarioId: detalhesAgendamento.funcionarioId,
       servicoId: detalhesAgendamento.servicoId,
-      // Formato ISO para backend: YYYY-MM-DDTHH:MM:SS
       dataHora: `${detalhesAgendamento.data}T${detalhesAgendamento.horario}:00`,
       descricao: detalhesAgendamento.descricao,
-      status: "PENDENTE", // Ou conforme sua lógica de status
+      status: "PENDENTE", 
     };
 
     console.log("Payload do agendamento:", agendamentoPayload);
@@ -220,8 +208,8 @@ const FormularioAgendamento: React.FC<Props> = ({
 
       alert(`Agendamento ${agendamentoIdParaEditar ? 'reagendado' : 'realizado'} com sucesso!`);
       setMostrarModal(false);
-      onAgendamentoConcluido(); // Chama o callback
-      // setPassoAtual(0); // Opcional: Resetar o passo, ou deixar a página pai decidir
+      onAgendamentoConcluido();
+
 
     } catch (error) {
       console.error(`Erro ao ${agendamentoIdParaEditar ? 'reagendar' : 'agendar'}:`, error);
@@ -240,7 +228,7 @@ const FormularioAgendamento: React.FC<Props> = ({
   }
 
   return (
-    <div className="flex flex-col w-full p-6 bg-white rounded-2xl "> {/* Removido max-w-2xl, shadow-lg, border para ser controlado pela ClientesPage */}
+    <div className="flex flex-col w-full p-6 bg-white rounded-2xl "> {}
       {/* Passo 0: Escolha do Funcionário */}
       {passoAtual === 0 && (
         <div>
@@ -259,7 +247,6 @@ const FormularioAgendamento: React.FC<Props> = ({
                     ...detalhesAgendamento,
                     funcionarioId: func.id,
                     funcionarioNome: func.nome,
-                    // Limpar data e horário ao mudar funcionário, pois disponibilidade pode mudar
                     data: "",
                     horario: "",
                   });
@@ -308,14 +295,14 @@ const FormularioAgendamento: React.FC<Props> = ({
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-1">Data:</label>
             <DatePicker
-              selected={detalhesAgendamento.data ? new Date(detalhesAgendamento.data + "T00:00:00") : null} // Adiciona T00:00 para evitar problemas de fuso local
+              selected={detalhesAgendamento.data ? new Date(detalhesAgendamento.data + "T00:00:00") : null} 
               onChange={(date: Date | null) => {
                 if (date) {
-                  const dataFormatada = date.toISOString().split("T")[0]; // YYYY-MM-DD
+                  const dataFormatada = date.toISOString().split("T")[0]; 
                   setDetalhesAgendamento({
                     ...detalhesAgendamento,
                     data: dataFormatada,
-                    horario: "", // Limpa horário ao mudar a data
+                    horario: "", 
                   });
                 } else {
                     setDetalhesAgendamento({...detalhesAgendamento, data: "", horario: ""});
@@ -426,7 +413,7 @@ const FormularioAgendamento: React.FC<Props> = ({
           onClose={() => setMostrarModal(false)}
           onConfirm={handleConfirmarAgendamento}
           detalhes={{
-            cliente: clienteNome, // Nome do cliente obtido no useEffect
+            cliente: clienteNome,
             funcionario: detalhesAgendamento.funcionarioNome || "Não selecionado",
             servicoId: detalhesAgendamento.servicoId,
             data: detalhesAgendamento.data,
@@ -434,7 +421,7 @@ const FormularioAgendamento: React.FC<Props> = ({
             outros: detalhesAgendamento.descricao,
           }}
           servicosList={servicos}
-          isEditing={!!agendamentoIdParaEditar} // Informa ao modal se é edição
+          isEditing={!!agendamentoIdParaEditar} 
         />
       )}
     </div>

@@ -4,7 +4,6 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import UserModal from "@/app/telas/administradores/UserModal";
 
-// Interfaces (mantidas como antes)
 interface Usuario {
   id: number;
   nome: string;
@@ -32,7 +31,6 @@ interface Servico {
   duracao_minutos: number | string;
 }
 
-// --- Ícones (mantidos como antes) ---
 const UsersIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 inline-block">
     <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
@@ -90,21 +88,17 @@ const AdminPage = () => {
       try {
         const userData = JSON.parse(userDataString);
 
-        // --- INÍCIO DO CONSOLE LOG ---
         console.log("AdminPage: Dados brutos do localStorage ('user'):", userData);
         console.log("AdminPage: Valor de userData.cpf:", userData.cpf, "| Tipo:", typeof userData.cpf);
         console.log("AdminPage: Valor de userData.telefone:", userData.telefone, "| Tipo:", typeof userData.telefone);
-        // --- FIM DO CONSOLE LOG ---
 
         const processField = (value: any): string => {
             if (value && typeof value === 'string' && value.trim() !== "") {
                 return value.trim();
             }
-            // Adicionando verificação para número 0 que pode ser interpretado como false
             if (value === 0) {
                  return "0";
             }
-            // Se for número diferente de 0, converte para string
             if (typeof value === 'number') {
                 return String(value);
             }
@@ -121,38 +115,34 @@ const AdminPage = () => {
           id: userData.id,
           nome: userData.nome || "Nome não disponível",
           email: userData.email || "Email não disponível",
-          telefone: finalTelefone, // Usa o valor processado
-          cpf: finalCpf,          // Usa o valor processado
+          telefone: finalTelefone,
+          cpf: finalCpf,         
           tipoDeUsuario: userData.tipoDeUsuario || "Não especificado",
         });
 
         setNewEmail(userData.email || "");
         setNewTelefone(finalTelefone === "Não informado" ? "" : finalTelefone);
-        setLoading(false); // Move setLoading para depois de setAdminData
+        setLoading(false);
       } catch (error) {
         console.error("Erro ao recuperar dados do admin do localStorage:", error);
         alert("Erro ao carregar dados do administrador. Verifique o console.");
         setLoading(false);
-        // Considerar não redirecionar automaticamente em erros de localStorage
-        // router.push("/");
       }
     } else {
         alert("Sessão não encontrada ou dados de usuário ausentes no localStorage. Redirecionando...");
-        setLoading(false); // Garante que loading seja false mesmo se não encontrar user
+        setLoading(false); 
         router.push("/");
     }
-  }, [router]); // A dependência `router` é necessária se usada no `catch` ou no `else`
+  }, [router]);
 
   useEffect(() => {
-    setLoading(true); // Define loading como true ao iniciar
+    setLoading(true); 
     fetchAdminDataFromStorage();
-     // setLoading(false) é chamado dentro de fetchAdminDataFromStorage agora
   }, [fetchAdminDataFromStorage]);
 
-  // Demais useEffects e handlers (fetchUsers, fetchServicos, etc.) permanecem os mesmos...
   const fetchUsers = useCallback(async () => {
     if (!adminData) return;
-    setLoading(true); // Define loading true no início da busca de usuários
+    setLoading(true); 
     try {
       const endpoint = filter === "todos"
         ? `${API_BASE_URL}/usuarios/listar/todos`
@@ -164,17 +154,17 @@ const AdminPage = () => {
     } catch (error) {
       console.error("Erro ao buscar usuários:", error);
       alert(error instanceof Error ? error.message : "Falha ao carregar usuários.");
-      setUsers([]); // Limpa usuários em caso de erro
+      setUsers([]);
     } finally {
-      setLoading(false); // Define loading false ao final da busca (sucesso ou erro)
+      setLoading(false); 
     }
-  }, [filter, adminData]); // Depende de filter e adminData
+  }, [filter, adminData]); 
 
   useEffect(() => {
-    if (selectedTab === "usuarios" && adminData) { // Garante que adminData está carregado
+    if (selectedTab === "usuarios" && adminData) {
       fetchUsers();
     }
-  }, [selectedTab, fetchUsers, adminData]); // Adiciona adminData como dependência
+  }, [selectedTab, fetchUsers, adminData]); 
 
   const fetchServicos = useCallback(async () => {
     if (!adminData) return;
@@ -191,13 +181,13 @@ const AdminPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [adminData]); // Depende de adminData
+  }, [adminData]); 
 
   useEffect(() => {
     if (selectedTab === "servicos" && adminData) {
       fetchServicos();
     }
-  }, [selectedTab, fetchServicos, adminData]); // Adiciona adminData
+  }, [selectedTab, fetchServicos, adminData]);
 
   const handleAddServico = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -236,7 +226,7 @@ const AdminPage = () => {
         throw new Error(`Erro ao adicionar serviço: ${errorData || response.status}`);
       }
       setNewServico({ nome: "", descricao: "", preco: "", duracao_minutos: "" });
-      fetchServicos(); // Rebusca serviços após adicionar
+      fetchServicos(); 
       alert("Serviço adicionado com sucesso!");
     } catch (error) {
       console.error("Erro ao adicionar serviço:", error);
@@ -254,7 +244,7 @@ const AdminPage = () => {
         method: "DELETE",
       });
       if (!response.ok) throw new Error(`Erro ${response.status} ao excluir serviço.`);
-      fetchServicos(); // Rebusca serviços após excluir
+      fetchServicos(); 
       alert("Serviço excluído com sucesso!");
     } catch (error) {
       console.error("Erro ao excluir serviço:", error);
@@ -277,12 +267,11 @@ const AdminPage = () => {
         return;
     }
 
-    const payload: any = { // Usar 'any' temporariamente ou criar tipo específico para payload
-      nome: adminData.nome, // Nome não é editável, mas pode ser necessário no backend
+    const payload: any = {
+      nome: adminData.nome, 
       email: newEmail,
-      telefone: newTelefone.trim() || null, // Envia null se vazio, ou o valor
-      tipoDeUsuario: adminData.tipoDeUsuario, // Tipo não é editável aqui
-      // CPF não é enviado, pois não é editável neste formulário
+      telefone: newTelefone.trim() || null, 
+      tipoDeUsuario: adminData.tipoDeUsuario,
     };
     if (newSenha.trim() !== "") {
       payload.senha = newSenha;
@@ -299,42 +288,35 @@ const AdminPage = () => {
       );
 
       if (response.ok) {
-          const updatedApiResponse = await response.json(); // Tenta ler a resposta como JSON
+          const updatedApiResponse = await response.json(); 
           alert("Perfil atualizado com sucesso!");
 
-          // Processa a resposta da API para atualizar o estado e localStorage
           const processField = (value: any): string => {
               if (value && typeof value === 'string' && value.trim() !== "") return value.trim();
-              if (typeof value === 'number') return String(value); // Converte número para string
+              if (typeof value === 'number') return String(value);
               return "Não informado";
           };
 
-          // Atualiza o estado local `adminData`
           const updatedAdminDataState = {
               ...adminData,
               email: updatedApiResponse.email || newEmail,
-              telefone: processField(updatedApiResponse.telefone), // Processa o telefone da API
-              // Mantém CPF do estado, pois não foi editado
-              // Mantém nome do estado, pois não foi editado
+              telefone: processField(updatedApiResponse.telefone),
           };
           setAdminData(updatedAdminDataState);
 
-          // Atualiza o localStorage com os dados do estado já processados
           const userFromStorage = JSON.parse(localStorage.getItem("user") || "{}");
           userFromStorage.email = updatedAdminDataState.email;
-          userFromStorage.nome = updatedAdminDataState.nome; // Atualiza nome no storage
-          userFromStorage.telefone = updatedAdminDataState.telefone; // Atualiza telefone no storage
-          // Mantém o CPF do storage, pois ele não foi editado nem veio da API de edição
+          userFromStorage.nome = updatedAdminDataState.nome; 
+          userFromStorage.telefone = updatedAdminDataState.telefone;
           localStorage.setItem("user", JSON.stringify(userFromStorage));
 
-          // Atualiza os campos de input para refletir o estado atualizado
           setNewEmail(updatedAdminDataState.email);
           setNewTelefone(updatedAdminDataState.telefone === "Não informado" ? "" : updatedAdminDataState.telefone);
-          setNewSenha(""); // Limpa campo de senha
-          setEditingProfile(false); // Sai do modo de edição
+          setNewSenha("");
+          setEditingProfile(false); 
 
       } else {
-          const errorMessage = await response.text(); // Pega o texto do erro
+          const errorMessage = await response.text(); 
           alert(`Erro ao atualizar perfil: ${errorMessage || `Erro ${response.status}`}`);
       }
     } catch (error) {
@@ -352,7 +334,7 @@ const AdminPage = () => {
         { method: "DELETE" }
       );
       if (!response.ok) throw new Error(`Erro ${response.status} ao excluir usuário.`);
-      fetchUsers(); // Rebusca usuários após excluir
+      fetchUsers();
       alert("Usuário excluído com sucesso!");
     } catch (error) {
       console.error("Erro ao excluir usuário:", error);
@@ -378,8 +360,8 @@ const AdminPage = () => {
   const filteredUsers = users.filter(
     (user) =>
       user.nome.toLowerCase().includes(search.toLowerCase()) ||
-      (user.cpf && user.cpf.includes(search)) || // Verifica se cpf existe antes de chamar includes
-      (user.telefone && user.telefone.includes(search)) // Verifica se telefone existe
+      (user.cpf && user.cpf.includes(search)) ||
+      (user.telefone && user.telefone.includes(search)) 
   );
 
   const NavLink: React.FC<{tabName: string; currentTab: string; onClick: () => void; icon?: React.ReactNode; label: string; isExternal?: boolean}> =
@@ -401,7 +383,6 @@ const AdminPage = () => {
   );
 
   const renderContent = () => {
-    // Mostra o loading enquanto `loading` for true OU `adminData` ainda não foi carregado
     if (loading || !adminData) {
         return (
             <div className="flex justify-center items-center h-full pt-10">
@@ -440,7 +421,6 @@ const AdminPage = () => {
                 <label htmlFor="filterUserType" className="sr-only">Filtrar por tipo</label>
                 <select
                   id="filterUserType"
-                  // --- CLASSE text-black ADICIONADA AQUI ---
                   className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-3 text-sm text-black bg-white"
                   value={filter} onChange={(e) => setFilter(e.target.value)}
                 >
@@ -451,13 +431,11 @@ const AdminPage = () => {
                 </select>
               </div>
             </div>
-            {/* Condição de loading ajustada: mostra se loading é true E não há usuários filtrados ainda */}
             {loading && !filteredUsers.length ? (
               <div className="text-center py-10">
                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
                  <p className="text-gray-500">Carregando usuários...</p>
               </div>
-            // Mostra a tabela se não estiver carregando E houver usuários filtrados
             ) : !loading && filteredUsers.length > 0 ? (
               <div className="overflow-x-auto shadow-md rounded-lg border">
                 <table className="min-w-full divide-y divide-gray-200">
@@ -491,12 +469,10 @@ const AdminPage = () => {
                   </tbody>
                 </table>
               </div>
-            // Mostra 'nenhum usuário' se não estiver carregando E não houver usuários filtrados
             ) : (<p className="text-center text-gray-500 py-10 text-lg">Nenhum usuário encontrado.</p>)}
           </section>
         );
 
-      // ... outros cases (servicos, perfil) ...
        case "servicos":
         return (
           <section className="bg-white p-4 sm:p-6 rounded-xl shadow-lg">
@@ -561,7 +537,6 @@ const AdminPage = () => {
           </section>
         );
       case "perfil":
-        // Adicionando verificação para adminData aqui também
         if (!adminData) {
            return <div className="text-center text-gray-500 py-10">Carregando dados do perfil...</div>;
         }
@@ -572,14 +547,12 @@ const AdminPage = () => {
             </h2>
             {!editingProfile ? (
               <div className="space-y-5">
-                {/* Exibição dos dados */}
                 <div className="pb-3 border-b border-gray-200">
                   <p className="text-sm font-medium text-gray-500">Nome</p>
                   <p className="text-lg text-gray-800">{adminData.nome}</p>
                 </div>
                 <div className="pb-3 border-b border-gray-200">
                   <p className="text-sm font-medium text-gray-500">CPF</p>
-                  {/* Exibe o valor do estado adminData.cpf */}
                   <p className="text-lg text-gray-800">{adminData.cpf}</p>
                 </div>
                 <div className="pb-3 border-b border-gray-200">
@@ -588,7 +561,6 @@ const AdminPage = () => {
                 </div>
                 <div className="pb-3 border-b border-gray-200">
                   <p className="text-sm font-medium text-gray-500">Telefone</p>
-                  {/* Exibe o valor do estado adminData.telefone */}
                   <p className="text-lg text-gray-800">{adminData.telefone}</p>
                 </div>
                 <div className="pb-3">
@@ -598,7 +570,6 @@ const AdminPage = () => {
                 <button
                   type="button"
                   onClick={() => {
-                      // Garante que adminData existe antes de acessá-lo
                       if (adminData) {
                         setNewEmail(adminData.email);
                         setNewTelefone(adminData.telefone === "Não informado" ? "" : adminData.telefone);
@@ -612,7 +583,6 @@ const AdminPage = () => {
                 </button>
               </div>
             ) : (
-              // Formulário de edição (lógica mantida)
               <form onSubmit={handleUpdateProfile} className="space-y-6">
                  <div>
                   <label htmlFor="profileNome" className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
@@ -651,7 +621,6 @@ const AdminPage = () => {
   };
 
   return (
-    // Layout geral (nav, header, main) permanece o mesmo
     <div className="flex h-screen bg-gray-100 font-sans">
       <nav className="w-64 bg-white p-5 shadow-xl h-full fixed top-0 left-0 flex flex-col justify-between print:hidden transition-transform duration-300 ease-in-out">
         <div>
@@ -690,11 +659,8 @@ const AdminPage = () => {
         <UserModal
           isOpen={modalOpen}
           onClose={() => setModalOpen(false)}
-          onSave={(newUser) => { // Modificado para receber newUser
+          onSave={(newUser) => { 
              setModalOpen(false);
-             // Adiciona o novo usuário à lista local para feedback imediato (opcional mas bom UX)
-             // setUsers(prevUsers => [...prevUsers, newUser]);
-             // Ou simplesmente re-busca a lista completa:
              if (selectedTab === "usuarios") {
                  fetchUsers();
              }

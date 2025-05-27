@@ -4,7 +4,6 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import FormularioAdmin from "../agendamento/formularioAdmin/FormularioAdmin";
 
-// --- ÍCONES ---
 const CreditCardIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2">
     <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.5 0H9M12.75 12H20.25M12.75 15H19.5M12.75 18H18.75M4.5 4.5v15a2.25 2.25 0 0 0 2.25 2.25h10.5a2.25 2.25 0 0 0 2.25-2.25V4.5m-15 0h15M4.5 4.5a2.25 2.25 0 0 1 2.25-2.25h10.5a2.25 2.25 0 0 1 2.25 2.25m0 0V2.25m0 2.25H4.5" />
@@ -29,7 +28,6 @@ const UsersIcon = () => (
     </svg>
 );
 
-// --- INTERFACES DA RecepcaoPage ---
 interface ClienteParaAbaClientes {
   id: number;
   nome: string;
@@ -199,7 +197,7 @@ const RecepcaoPage: React.FC = () => {
         funcionarioId: ag.funcionarioId,
         servicoNome: ag.servicoNome ?? "Serviço não informado",
         servicoId: ag.servicoId,
-        precoServico: ag.precoServico, // Espera que o DTO tenha o preço
+        precoServico: ag.precoServico,
         descricao: ag.descricao ?? "",
         status: ag.status?.toUpperCase() ?? "FINALIZADO",
       }));
@@ -309,13 +307,6 @@ const RecepcaoPage: React.FC = () => {
     console.log(
       `Pagamento simulado para agendamento ID: ${agendamentoSelecionadoParaPagamento.id}, Forma: ${formaPagamento}`
     );
-
-    // Ação ideal: Chamar o backend para registrar o pagamento e mudar status para "PAGO"
-    // Ex: await handleAtualizarStatusAgendamento(agendamentoSelecionadoParaPagamento.id, "PAGO");
-    // E então, se o backend removeu o item da lista de "FINALIZADO", a chamada a
-    // fetchAgendamentosFinalizados() atualizaria a UI.
-
-    // Para simulação "só pra ter alguma coisa" e fazer sumir:
     setAgendamentosParaPagamento(prev =>
       prev.filter(ag => ag.id !== agendamentoSelecionadoParaPagamento!.id)
     );
@@ -510,8 +501,8 @@ const RecepcaoPage: React.FC = () => {
                   onFormSubmitSuccess={() => {
                       console.log("RecepcaoPage: onFormSubmitSuccess chamado do FormularioAdmin.");
                       setAgendamentoParaEdicao(undefined);
-                      buscarAgendamentosFila(); // Atualiza a fila após submissão do formulário
-                      setSelectedTab("fila"); // Volta para a fila
+                      buscarAgendamentosFila();
+                      setSelectedTab("fila");
                   }}
                 />
             </section>

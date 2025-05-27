@@ -29,12 +29,6 @@ interface Cliente {
   tipoDeUsuario: string;
 }
 
-// Interface Funcionario não é necessária aqui se não listamos funcionários
-// interface Funcionario {
-//   id: number;
-//   nome: string;
-// }
-
 interface Servico {
   id: number;
   nome: string;
@@ -43,14 +37,14 @@ interface Servico {
 
 interface FormularioAgendamentoFuncionarioProps {
   funcionarioId: number;
-  funcionarioNome: string; // Nome do funcionário para exibição no modal
+  funcionarioNome: string; 
   agendamento?: Agendamento | null;
   onOperacaoConcluida?: () => void;
 }
 
 const FormularioAgendamentoFuncionario: React.FC<FormularioAgendamentoFuncionarioProps> = ({
   funcionarioId,
-  funcionarioNome, // Recebendo o nome do funcionário
+  funcionarioNome,
   agendamento,
   onOperacaoConcluida,
 }) => {
@@ -236,7 +230,7 @@ const FormularioAgendamentoFuncionario: React.FC<FormularioAgendamentoFuncionari
       });
 
       if (!response.ok) {
-        const errorBody = await response.text(); // Tenta pegar o corpo do erro
+        const errorBody = await response.text(); 
         throw new Error(`Erro ao salvar agendamento: ${errorBody || response.status}`);
       }
 
@@ -399,7 +393,7 @@ const FormularioAgendamentoFuncionario: React.FC<FormularioAgendamentoFuncionari
             className="w-full p-3 border rounded-lg h-28 focus:ring-2 focus:ring-blue-500 transition-shadow"
             placeholder="Alguma observação para este agendamento?"
             value={detalhesAgendamento.descricao}
-            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => // Tipagem para textarea
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => 
               setDetalhesAgendamento((prev) => ({ ...prev, descricao: e.target.value }))
             }
           />
@@ -441,13 +435,13 @@ const FormularioAgendamentoFuncionario: React.FC<FormularioAgendamentoFuncionari
           onConfirm={handleSubmit}
           detalhes={{
             servicoId: detalhesAgendamento.servicoId,
-            funcionario: funcionarioNome, // Usando a prop funcionarioNome
+            funcionario: funcionarioNome, 
             cliente: clientes.find((cli) => cli.id === detalhesAgendamento.clienteId)?.nome || "Cliente não selecionado",
             data: detalhesAgendamento.data,
             horario: detalhesAgendamento.horario,
             outros: detalhesAgendamento.descricao,
           }}
-          servicosList={servicos} // Passando a lista de serviços para o modal encontrar o nome
+          servicosList={servicos}
           isEditing={!!agendamento?.id}
         />
       )}

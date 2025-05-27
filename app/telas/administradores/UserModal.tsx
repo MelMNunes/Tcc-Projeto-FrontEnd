@@ -1,15 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-import MaskedInput from "@/app/components/InputMask"; // Certifique-se que o caminho está correto
+import MaskedInput from "@/app/components/InputMask"; 
 
 interface UserModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (user: any) => void; // Ajustado para 'any' para simplificar, idealmente teria um tipo de usuário de resposta
+  onSave: (user: any) => void; 
 }
 
-// Ícone para o botão de fechar
 const XMarkIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -23,9 +22,9 @@ const UserModal = ({ isOpen, onClose, onSave }: UserModalProps) => {
     cpf: "",
     telefone: "",
     senha: "",
-    tipoDeUsuario: "CLIENTE", // Valor padrão
+    tipoDeUsuario: "CLIENTE", 
   });
-  const [isLoading, setIsLoading] = useState(false); // Estado para feedback de carregamento
+  const [isLoading, setIsLoading] = useState(false);
 
   if (!isOpen) return null;
 
@@ -44,7 +43,6 @@ const UserModal = ({ isOpen, onClose, onSave }: UserModalProps) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Validação básica (exemplo)
     if (!userData.nome || !userData.email || !userData.cpf || !userData.senha) {
         alert("Por favor, preencha todos os campos obrigatórios.");
         setIsLoading(false);
@@ -74,38 +72,31 @@ const UserModal = ({ isOpen, onClose, onSave }: UserModalProps) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          // Removido Authorization daqui, pois o token do admin que cadastra já deve estar na API
-          // Se o token for do próprio usuário sendo cadastrado, não faria sentido aqui.
-          // Se for um token de admin para autorizar o cadastro, ele deve ser pego de forma segura.
-          // Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
         body: JSON.stringify(userData),
       });
 
-      const responseText = await response.text(); // Ler como texto primeiro
+      const responseText = await response.text();
 
       if (response.ok) {
         alert("Usuário cadastrado com sucesso!");
         try {
-          const jsonData = JSON.parse(responseText); // Tentar parsear se for JSON
+          const jsonData = JSON.parse(responseText);
           onSave(jsonData);
         } catch (jsonError) {
           console.warn("Resposta de sucesso não era JSON ou era JSON inválido, mas a operação foi OK:", responseText);
-          onSave(userData); // Chama onSave com os dados enviados se a resposta não for JSON
+          onSave(userData);
         }
-        onClose(); // Fecha o modal
-         // Limpa o formulário para o próximo uso
+        onClose();
         setUserData({
             nome: "", email: "", cpf: "", telefone: "", senha: "", tipoDeUsuario: "CLIENTE",
         });
       } else {
-        // Tenta pegar uma mensagem de erro do backend se for JSON
         let errorMessage = `Erro ${response.status}: ${response.statusText}`;
         try {
           const errorJson = JSON.parse(responseText);
           errorMessage = errorJson.message || errorJson.error || errorMessage;
         } catch (e) {
-          // Se não for JSON, usa o texto da resposta se houver, ou o statusText
           if (responseText) errorMessage = responseText;
         }
         alert(`Falha ao cadastrar usuário: ${errorMessage}`);
@@ -175,7 +166,7 @@ const UserModal = ({ isOpen, onClose, onSave }: UserModalProps) => {
                 CPF <span className="text-red-500">*</span>
               </label>
               <MaskedInput
-                type="CPF" // Seu tipo de máscara
+                type="CPF"
                 id="cpf"
                 name="cpf"
                 value={userData.cpf}
@@ -190,7 +181,7 @@ const UserModal = ({ isOpen, onClose, onSave }: UserModalProps) => {
                 Telefone
               </label>
               <MaskedInput
-                type="Telefone" // Seu tipo de máscara
+                type="Telefone" 
                 id="telefone"
                 name="telefone"
                 value={userData.telefone}

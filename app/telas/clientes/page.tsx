@@ -13,7 +13,7 @@ const ClientesPage = () => {
     funcionarioId: number;
     funcionarioNome: string;
     descricao?: string;
-    status: "PENDENTE" | "FINALIZADO" | "CANCELADO" | string; // Ajustado para tipos específicos e fallback string
+    status: "PENDENTE" | "FINALIZADO" | "CANCELADO" | string;
   }
 
   interface ClienteData {
@@ -144,8 +144,6 @@ const ClientesPage = () => {
         "Dados do usuário não encontrados no localStorage. Redirecionando..."
       );
       setLoading(false);
-      // Idealmente, redirecionar para a página de login
-      // window.location.href = "/telas/login";
     }
   }, []);
 
@@ -154,7 +152,7 @@ const ClientesPage = () => {
       const data = await getUsuarioById(userId);
       setClienteData(data);
       setNewEmail(data.email);
-      setNewTelefone(data.telefone || ""); // Garantir que telefone seja string
+      setNewTelefone(data.telefone || "");
     } catch (error) {
       console.error("Erro ao buscar dados do cliente:", error);
       setClienteData(null);
@@ -171,14 +169,12 @@ const ClientesPage = () => {
         throw new Error(`Erro HTTP: ${response.status}`);
       }
       const data: Consulta[] = await response.json();
-      // Ordenação primária por data (mais recentes primeiro), secundária para pendentes primeiro dentro do mesmo dia.
       const sortedAgendamentos = data.sort((a, b) => {
         const dateA = new Date(a.dataHora).getTime();
         const dateB = new Date(b.dataHora).getTime();
         if (dateA !== dateB) {
-          return dateB - dateA; // Mais recentes primeiro
+          return dateB - dateA; 
         }
-        // Se mesma data, pendentes vêm antes
         if (a.status === "PENDENTE" && b.status !== "PENDENTE") return -1;
         if (a.status !== "PENDENTE" && b.status === "PENDENTE") return 1;
         return 0;
@@ -225,20 +221,18 @@ const ClientesPage = () => {
 
       if (response.ok) {
         alert("Perfil atualizado com sucesso!");
-        const updatedData = await response.json(); // Supondo que a API retorna o usuário atualizado
+        const updatedData = await response.json();
         if (clienteData) {
-          // Verifica se clienteData não é null
           setClienteData({
             ...clienteData,
             email: updatedData.email || newEmail,
             telefone: updatedData.telefone || newTelefone,
           });
-          // Atualiza o localStorage também
           const userFromStorage = JSON.parse(
             localStorage.getItem("user") || "{}"
           );
           userFromStorage.email = updatedData.email || newEmail;
-          userFromStorage.nome = clienteData.nome; // Nome não é editado aqui mas precisa estar no storage
+          userFromStorage.nome = clienteData.nome; 
           localStorage.setItem("user", JSON.stringify(userFromStorage));
         }
         setEditingProfile(false);
@@ -295,7 +289,7 @@ const ClientesPage = () => {
       localStorage.removeItem("user");
       localStorage.removeItem("id");
       localStorage.removeItem("token");
-      window.location.href = "/telas/login"; // Redireciona para a tela de login
+      window.location.href = "/telas/login";
     }
   };
 
@@ -317,10 +311,10 @@ const ClientesPage = () => {
         };
       case "CANCELADO":
         return {
-          bg: "bg-red-50", // Ou bg-gray-50 para menos destaque
-          border: "border-red-300", // Ou border-gray-300
-          text: "text-red-600", // Ou text-gray-600
-          badge: "bg-red-500 text-white", // Ou bg-gray-500
+          bg: "bg-red-50",
+          border: "border-red-300", 
+          text: "text-red-600", 
+          badge: "bg-red-500 text-white", 
         };
       default:
         return {
@@ -348,7 +342,7 @@ const ClientesPage = () => {
         {listaAgendamentos.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {listaAgendamentos.map((consulta) => {
-              const cardStatusClasses = getStatusClassNames(consulta.status); // Pega as classes específicas do status do card
+              const cardStatusClasses = getStatusClassNames(consulta.status);
               return (
                 <div
                   key={consulta.id}
@@ -462,7 +456,7 @@ const ClientesPage = () => {
               }`}
               onClick={prepararNovoAgendamento}
             >
-              <CalendarDaysIcon /> {/* Ícone SVG aqui */}
+              <CalendarDaysIcon /> {}
               <span>{agendamentoParaEditarId ? "Reagendar" : "Novo Agendamento"}</span>
             </li>
             <li
@@ -473,7 +467,7 @@ const ClientesPage = () => {
               }`}
               onClick={() => setSelectedTab("consultas")}
             >
-              <ListBulletIcon /> {/* Ícone SVG aqui */}
+              <ListBulletIcon /> {}
               <span>Minhas Consultas</span>
             </li>
             <li
@@ -484,7 +478,7 @@ const ClientesPage = () => {
               }`}
               onClick={() => setSelectedTab("perfil")}
             >
-              <UserCircleIcon /> {/* Ícone SVG aqui */}
+              <UserCircleIcon /> {}
               <span>Meu Perfil</span>
             </li>
           </ul>
@@ -493,7 +487,7 @@ const ClientesPage = () => {
           onClick={handleLogout}
           className="w-full mt-8 px-4 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-semibold flex items-center justify-center space-x-2 shadow-md"
         >
-          <ArrowLeftOnRectangleIcon /> {/* Ícone SVG aqui */}
+          <ArrowLeftOnRectangleIcon /> {}
           <span>Sair</span>
         </button>
       </nav>

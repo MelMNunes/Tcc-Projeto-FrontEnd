@@ -1,9 +1,7 @@
-// Em ModalConfirmacao.tsx
-
 interface ModalDetalhes {
   cliente: string;
   funcionario: string;
-  servicoId: number | null; // Mudou de nome para ID
+  servicoId: number | null;
   data: string;
   horario: string;
   outros?: string;
@@ -12,7 +10,6 @@ interface ModalDetalhes {
 interface ServicoParaModal {
     id: number;
     nome: string;
-    // preco: number; // Se precisar do preço no modal
 }
 
 interface ModalConfirmacaoProps {
@@ -20,8 +17,8 @@ interface ModalConfirmacaoProps {
   onClose: () => void;
   onConfirm: () => void;
   detalhes: ModalDetalhes;
-  servicosList: ServicoParaModal[]; // Lista de serviços
-  isEditing?: boolean; // Nova prop
+  servicosList: ServicoParaModal[]; 
+  isEditing?: boolean; 
 }
 
 const ModalConfirmacao: React.FC<ModalConfirmacaoProps> = ({

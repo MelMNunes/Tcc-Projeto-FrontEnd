@@ -1,19 +1,18 @@
 "use client";
 
-import { Dispatch, SetStateAction, useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import ModalConfirmacao from "../components/ModalConfirmacao"; 
 import DatePicker, { registerLocale } from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import ptBR from 'date-fns/locale/pt-BR';
 registerLocale('pt-BR', ptBR);
 
-// Interface para a prop 'agendamento' que vem da RecepcaoPage ou outra página
 interface AgendamentoProp {
-  id: number; // ID do agendamento existente, crucial para edição
+  id: number; 
   clienteId: number;
   funcionarioId: number;
   servicoId: number;
-  dataHora: string; // Formato "YYYY-MM-DDTHH:mm:ss" ou similar
+  dataHora: string; 
   descricao: string;
   status: string;
 }
@@ -35,16 +34,16 @@ interface Servico {
 }
 
 interface FormularioAdminProps {
-  agendamento?: AgendamentoProp; // Prop para pré-preencher/editar. Opcional.
+  agendamento?: AgendamentoProp;
   onFormSubmitSuccess?: () => void;
-  // As props passoAtual e setPassoAtual foram removidas, o formulário gerencia seus passos.
+
 }
 
 const horariosPadrao = [
   "09:00", "09:50", "10:40", "11:30",
   "13:00", "13:50", "14:40", "15:30", "16:20", "17:10",
 ];
-const MAX_STEPS = 4; // 0-indexado: Serviço, Cliente, Funcionário, Data/Hora, Descrição
+const MAX_STEPS = 4; 
 
 const FormularioAdmin: React.FC<FormularioAdminProps> = ({
   agendamento, 
@@ -52,7 +51,6 @@ const FormularioAdmin: React.FC<FormularioAdminProps> = ({
 }) => {
   const [passoAtualInterno, setPassoAtualInterno] = useState(0);
 
-  // DEBUG INICIAL: Verificar as props recebidas pelo formulário
   console.log("FormularioAdmin RENDERIZADO. Props recebidas:", { agendamento }); 
 
   const [mostrarModal, setMostrarModal] = useState(false);
@@ -76,12 +74,10 @@ const FormularioAdmin: React.FC<FormularioAdminProps> = ({
   const [loadingInitialData, setLoadingInitialData] = useState<boolean>(true);
   const [loadingHorarios, setLoadingHorarios] = useState<boolean>(false);
 
-  // Efeito para carregar dados iniciais (clientes, funcionários, serviços)
   useEffect(() => {
     const fetchInitialData = async () => {
       setLoadingInitialData(true);
       try {
-        // Paraleliza as chamadas de API
         const [clientesRes, funcionariosRes, servicosRes] = await Promise.all([
           fetch("http://localhost:8080/api/usuarios/listar/CLIENTE"),
           fetch("http://localhost:8080/api/usuarios/listar/FUNCIONARIO"),
@@ -98,15 +94,13 @@ const FormularioAdmin: React.FC<FormularioAdminProps> = ({
 
       } catch (err) {
         console.error("FormularioAdmin - Erro ao carregar dados iniciais:", err);
-        // Considerar mostrar um feedback para o usuário aqui
       } finally {
         setLoadingInitialData(false);
       }
     };
     fetchInitialData();
-  }, []); // Executa apenas uma vez na montagem
+  }, []); 
 
-  // Efeito para preencher o formulário quando 'agendamento' (para edição) mudar
   useEffect(() => {
     console.log("FormularioAdmin useEffect [agendamento] - Prop 'agendamento' recebida:", agendamento); 
     if (agendamento && agendamento.id !== undefined) { 
@@ -124,7 +118,7 @@ const FormularioAdmin: React.FC<FormularioAdminProps> = ({
           : "",
         descricao: agendamento.descricao ?? "",
       });
-      setPassoAtualInterno(0); // Sempre reseta para o primeiro passo ao carregar para edição
+      setPassoAtualInterno(0); 
     } else {
       console.log("FormularioAdmin: Resetando formulário para NOVO agendamento.");
       setDetalhesAgendamento({
@@ -133,11 +127,11 @@ const FormularioAdmin: React.FC<FormularioAdminProps> = ({
       });
       setTermoBuscaCliente("");
       setTermoBuscaFuncionario("");
-      setPassoAtualInterno(0); // Reseta para o primeiro passo para novo agendamento
+      setPassoAtualInterno(0); 
     }
-  }, [agendamento]); // Dependência correta: reage a mudanças na prop 'agendamento'
+  }, [agendamento]); 
 
-  // Efeito para buscar horários ocupados
+
   useEffect(() => {
     const buscarHorariosOcupados = async () => {
       if (!detalhesAgendamento.data || !detalhesAgendamento.funcionarioId) {
@@ -146,14 +140,13 @@ const FormularioAdmin: React.FC<FormularioAdminProps> = ({
       }
       setLoadingHorarios(true);
       try {
-        // A URL deve ser para buscar horários de um funcionário específico em um dia específico
         const response = await fetch(
           `http://localhost:8080/api/agendamentos/funcionarios/${detalhesAgendamento.funcionarioId}/dia/${detalhesAgendamento.data}`
         );
         if (!response.ok) {
-          if (response.status === 404) { // Nenhum horário ocupado encontrado
+          if (response.status === 404) { 
             setHorariosOcupados([]); 
-          } else { // Outro erro
+          } else { 
             const errorText = await response.text();
             console.warn(`FormularioAdmin - Erro ao buscar horários (${response.status}): ${errorText}`);
             setHorariosOcupados([]); 
@@ -162,7 +155,7 @@ const FormularioAdmin: React.FC<FormularioAdminProps> = ({
         }
         const listaAgendamentosDoDia: { dataHora: string }[] = await response.json();
         const ocupados = listaAgendamentosDoDia.map((a) =>
-          new Date(a.dataHora).toLocaleTimeString('pt-BR', { // Formata para HH:MM
+          new Date(a.dataHora).toLocaleTimeString('pt-BR', {
             hour: "2-digit",
             minute: "2-digit",
           })
@@ -175,7 +168,6 @@ const FormularioAdmin: React.FC<FormularioAdminProps> = ({
         setLoadingHorarios(false);
       }
     };
-    // Busca horários apenas se estiver no passo de Data/Hora e os dados necessários estiverem presentes
       if (passoAtualInterno === 3 && detalhesAgendamento.data && detalhesAgendamento.funcionarioId) {
         buscarHorariosOcupados();
       }
@@ -254,21 +246,15 @@ const FormularioAdmin: React.FC<FormularioAdminProps> = ({
     const dataHoraCombinada = `${data}T${horario}:00`; 
 
     const agendamentoDataPayload = {
-      // Se estiver editando, o backend espera o ID do agendamento no path da URL,
-      // mas o payload deve conter os campos a serem atualizados.
-      // O ID do agendamento em si não precisa estar no payload se a API usa o ID da URL.
-      // No entanto, enviar os IDs de cliente, funcionário e serviço é necessário.
       clienteId,
       funcionarioId, 
       servicoId,
       dataHora: dataHoraCombinada,
       descricao,
-      status: "PENDENTE", // Para reagendamentos, geralmente volta para pendente
+      status: "PENDENTE",
     };
 
     try {
-      // 'agendamento' é a prop que vem da RecepcaoPage (ou outra).
-      // Se ela (e seu id) existir, estamos editando.
       const isEditing = agendamento && agendamento.id !== undefined;
       
       console.log("FormularioAdmin handleSubmit - isEditing:", isEditing);
@@ -277,8 +263,8 @@ const FormularioAdmin: React.FC<FormularioAdminProps> = ({
       }
 
       const url = isEditing
-        ? `http://localhost:8080/api/agendamentos/${agendamento.id}` // URL para PUT
-        : "http://localhost:8080/api/agendamentos/criar";           // URL para POST
+        ? `http://localhost:8080/api/agendamentos/${agendamento.id}` 
+        : "http://localhost:8080/api/agendamentos/criar";         
       const metodo = isEditing ? "PUT" : "POST";
 
       console.log(`FormularioAdmin: Tentando ${metodo} para ${url} com payload:`, JSON.stringify(agendamentoDataPayload, null, 2));
@@ -290,14 +276,14 @@ const FormularioAdmin: React.FC<FormularioAdminProps> = ({
       });
 
       if (!response.ok) {
-        const errorBody = await response.text(); // Ler como texto para ver o erro exato
+        const errorBody = await response.text(); 
         console.error("FormularioAdmin - Erro do backend:", errorBody);
         let errorMessage = `Falha ao ${isEditing ? 'atualizar' : 'criar'} agendamento.`;
         try {
             const errorJson = JSON.parse(errorBody);
             errorMessage = errorJson.message || errorJson.error || errorMessage;
         } catch (e) {
-            // Se não for JSON, usa o texto da resposta se houver
+
             if (errorBody) errorMessage = errorBody;
         }
         throw new Error(errorMessage);
@@ -309,7 +295,7 @@ const FormularioAdmin: React.FC<FormularioAdminProps> = ({
         console.log("FormularioAdmin: Chamando onFormSubmitSuccess");
         onFormSubmitSuccess(); 
       }
-      // Resetar o formulário para o estado inicial de criação
+
       setPassoAtualInterno(0); 
       setDetalhesAgendamento({ 
         servicoId: null, clienteId: null, funcionarioId: null,
@@ -317,10 +303,6 @@ const FormularioAdmin: React.FC<FormularioAdminProps> = ({
       });
       setTermoBuscaCliente(""); 
       setTermoBuscaFuncionario("");
-      // Importante: A prop 'agendamento' não é resetada aqui, pois ela vem de fora.
-      // A página pai (RecepcaoPage) deve limpar 'agendamentoParaEdicao' após o sucesso,
-      // o que fará este formulário resetar através do useEffect [agendamento].
-
     } catch (error) {
       console.error("FormularioAdmin - Erro ao salvar agendamento:", error);
       alert(`Erro: ${(error as Error).message}`);
@@ -446,7 +428,7 @@ const FormularioAdmin: React.FC<FormularioAdminProps> = ({
             />
           </div>
 
-          {detalhesAgendamento.data && detalhesAgendamento.funcionarioId && ( // Garante que funcionário também foi selecionado
+          {detalhesAgendamento.data && detalhesAgendamento.funcionarioId && (
             <div>
               <h3 className="text-xl font-semibold mb-4 text-gray-600">
                 Horários disponíveis em {new Date(detalhesAgendamento.data + "T00:00:00").toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}:

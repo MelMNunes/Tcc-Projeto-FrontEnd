@@ -3,17 +3,17 @@ import FormularioAdmin from "./FormularioAdmin";
 
 const Page: React.FC = () => {
   const [passoAtual, setPassoAtual] = useState(0);
-  const [usuarioId, setUsuarioId] = useState<number | null>(null); // Estado para armazenar o ID do usuário
+  const [usuarioId, setUsuarioId] = useState<number | null>(null);
 
   useEffect(() => {
-    const id = localStorage.getItem("id"); // Supondo que o ID do usuário esteja armazenado no localStorage
+    const id = localStorage.getItem("id"); 
     if (id) {
-      setUsuarioId(Number(id)); // Converte o ID para número e armazena no estado
+      setUsuarioId(Number(id));
     }
   }, []);
 
   if (usuarioId === null) {
-    return <p>Carregando informações do usuário...</p>; // Exibe uma mensagem enquanto o ID do usuário não é carregado
+    return <p>Carregando informações do usuário...</p>;
   }
 
   return (
@@ -21,7 +21,7 @@ const Page: React.FC = () => {
       <FormularioAdmin 
         passoAtual={passoAtual} 
         setPassoAtual={setPassoAtual} 
-        usuarioId={usuarioId} // Passa o ID do usuário para o FormularioAdmin
+        usuarioId={usuarioId} 
       />
     </div>
   );
