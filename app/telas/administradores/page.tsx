@@ -475,17 +475,17 @@ const AdminPage = () => {
 
        case "servicos":
         return (
-          <section className="bg-white p-4 sm:p-6 rounded-xl shadow-lg">
+          <section className="bg-white p-4 sm:p-6 rounded-xl shadow-lg text-black">
             <h2 className="text-2xl sm:text-3xl font-semibold text-gray-700 mb-6">Gerenciar Serviços</h2>
             <form onSubmit={handleAddServico} className="mb-8 p-4 sm:p-6 border border-gray-200 rounded-lg shadow-sm bg-gray-50 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
               <h3 className="text-xl font-medium text-gray-700 col-span-1 md:col-span-2 mb-2">Adicionar Novo Serviço</h3>
               <div>
                 <label htmlFor="servicoNome" className="block text-sm font-medium text-gray-700 mb-1">Nome <span className="text-red-500">*</span></label>
-                <input id="servicoNome" type="text" placeholder="Ex: Corte Masculino" value={newServico.nome} onChange={(e) => setNewServico({ ...newServico, nome: e.target.value })} className="w-full border-gray-300 rounded-lg shadow-sm p-3 focus:ring-indigo-500 focus:border-indigo-500 text-sm" required />
+                <input id="servicoNome" type="text" placeholder="Ex: Unha Encravada" value={newServico.nome} onChange={(e) => setNewServico({ ...newServico, nome: e.target.value })} className="w-full border-gray-300 rounded-lg shadow-sm p-3 focus:ring-indigo-500 focus:border-indigo-500 text-sm" required />
               </div>
               <div>
                 <label htmlFor="servicoDescricao" className="block text-sm font-medium text-gray-700 mb-1">Descrição <span className="text-red-500">*</span></label>
-                <input id="servicoDescricao" type="text" placeholder="Ex: Inclui lavagem e finalização" value={newServico.descricao} onChange={(e) => setNewServico({ ...newServico, descricao: e.target.value })} className="w-full border-gray-300 rounded-lg shadow-sm p-3 focus:ring-indigo-500 focus:border-indigo-500 text-sm" required />
+                <input id="servicoDescricao" type="text" placeholder="Ex: Desencrava unhas" value={newServico.descricao} onChange={(e) => setNewServico({ ...newServico, descricao: e.target.value })} className="w-full border-gray-300 rounded-lg shadow-sm p-3 focus:ring-indigo-500 focus:border-indigo-500 text-sm" required />
               </div>
               <div>
                 <label htmlFor="servicoPreco" className="block text-sm font-medium text-gray-700 mb-1">Preço (R$) <span className="text-red-500">*</span></label>

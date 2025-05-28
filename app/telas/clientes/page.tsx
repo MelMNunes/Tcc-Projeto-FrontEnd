@@ -173,7 +173,7 @@ const ClientesPage = () => {
         const dateA = new Date(a.dataHora).getTime();
         const dateB = new Date(b.dataHora).getTime();
         if (dateA !== dateB) {
-          return dateB - dateA; 
+          return dateB - dateA;
         }
         if (a.status === "PENDENTE" && b.status !== "PENDENTE") return -1;
         if (a.status !== "PENDENTE" && b.status === "PENDENTE") return 1;
@@ -213,7 +213,7 @@ const ClientesPage = () => {
         {
           method: "PUT",
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type": "application/json", 
           },
           body: JSON.stringify(payload),
         }
@@ -221,34 +221,36 @@ const ClientesPage = () => {
 
       if (response.ok) {
         alert("Perfil atualizado com sucesso!");
-        const updatedData = await response.json();
+        await response.text();
+
         if (clienteData) {
           setClienteData({
             ...clienteData,
-            email: updatedData.email || newEmail,
-            telefone: updatedData.telefone || newTelefone,
+            email: newEmail,
+            telefone: newTelefone, 
           });
           const userFromStorage = JSON.parse(
             localStorage.getItem("user") || "{}"
           );
-          userFromStorage.email = updatedData.email || newEmail;
-          userFromStorage.nome = clienteData.nome; 
+          userFromStorage.email = newEmail;
+          userFromStorage.nome = clienteData.nome;
           localStorage.setItem("user", JSON.stringify(userFromStorage));
         }
         setEditingProfile(false);
         setNewSenha("");
       } else {
-        const errorData = await response
-          .json()
-          .catch(() => ({ message: response.statusText }));
+        const errorText = await response.text();
         alert(
           `Erro ao atualizar perfil: ${
-            errorData.message || "Erro desconhecido"
+            errorText || response.statusText || "Erro desconhecido"
           }`
         );
       }
     } catch (error) {
-      console.error("Erro na requisição de atualizar perfil:", error);
+      console.error(
+        "Erro na requisição de atualizar perfil (bloco catch):",
+        error
+      );
       alert("Ocorreu um erro de comunicação ao tentar atualizar o perfil.");
     }
   };
@@ -312,9 +314,9 @@ const ClientesPage = () => {
       case "CANCELADO":
         return {
           bg: "bg-red-50",
-          border: "border-red-300", 
-          text: "text-red-600", 
-          badge: "bg-red-500 text-white", 
+          border: "border-red-300",
+          text: "text-red-600",
+          badge: "bg-red-500 text-white",
         };
       default:
         return {
@@ -444,8 +446,8 @@ const ClientesPage = () => {
       <nav className="w-64 bg-white p-5 shadow-xl h-screen fixed top-0 left-0 flex flex-col justify-between print:hidden">
         <div>
           <div className="text-center mb-10 pt-2">
-             <h1 className="text-2xl font-bold text-blue-700">Meu Painel</h1>
-             <p className="text-sm text-gray-500 mt-1">Cliente</p>
+            <h1 className="text-2xl font-bold text-blue-700">Meu Painel</h1>
+            <p className="text-sm text-gray-500 mt-1">Cliente</p>
           </div>
           <ul className="space-y-3">
             <li
@@ -457,7 +459,9 @@ const ClientesPage = () => {
               onClick={prepararNovoAgendamento}
             >
               <CalendarDaysIcon /> {}
-              <span>{agendamentoParaEditarId ? "Reagendar" : "Novo Agendamento"}</span>
+              <span>
+                {agendamentoParaEditarId ? "Reagendar" : "Novo Agendamento"}
+              </span>
             </li>
             <li
               className={`p-3 rounded-lg cursor-pointer transition-colors flex items-center space-x-3 ${
