@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import FormularioAgendamentoFuncionario from "../agendamento/formularioFuncionario/FormularioFuncionario";
 import { getUsuarioById } from "@/app/services/api";
-import Modal from "@/app/components/Modal/Modal"; 
+import Modal from "@/app/components/Modal/Modal";
 import FormularioAnamnesePage, {
   AnamnesePayload,
 } from "@/app/telas/anamnese/page";
@@ -296,15 +296,10 @@ const FuncionariosPage: React.FC = () => {
   }, [fetchFuncionarioDataAndInitialAgendamentos, router]);
 
   useEffect(() => {
-    if (funcionarioData?.id && !loadingPage) {
+    if (funcionarioData?.id) {
       fetchAgendamentosCallback(funcionarioData.id, statusFiltro);
     }
-  }, [
-    statusFiltro,
-    funcionarioData?.id,
-    fetchAgendamentosCallback,
-    loadingPage,
-  ]);
+  }, [statusFiltro, funcionarioData?.id, fetchAgendamentosCallback]);
 
   const handleAbrirModalPreencherOuEditarAnamnese = async (
     consulta: ConsultaAgendamento
@@ -328,7 +323,7 @@ const FuncionariosPage: React.FC = () => {
         const anamneseExistenteApiDTO = await response.json();
 
         const payloadFormatado: Partial<AnamnesePayload> = {
-          id: anamneseExistenteApiDTO.id, 
+          id: anamneseExistenteApiDTO.id,
           agendamentoId: anamneseExistenteApiDTO.agendamentoId,
           clienteId: anamneseExistenteApiDTO.clienteId,
           dataRegistro: anamneseExistenteApiDTO.dataRegistro?.split("T")[0],
