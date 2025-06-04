@@ -664,7 +664,6 @@ const FuncionariosPage: React.FC = () => {
     };
     const currentStatusStyle =
       statusStyles[consulta.status] || statusStyles.PENDENTE;
-
     return (
       <div
         className={`rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 ease-in-out relative flex flex-col ${currentStatusStyle.bg} border`}
