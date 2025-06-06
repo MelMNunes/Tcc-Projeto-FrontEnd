@@ -252,78 +252,74 @@ const AdminPage = () => {
     }
   };
 
- const handleUpdateProfile = async (e: React.FormEvent) => {
+const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!adminData?.id) {
         alert("Dados do administrador não carregados.");
         return;
     }
-    if (!newEmail.trim() || !/\S+@\S+\.\S+/.test(newEmail)) {
-        alert("Por favor, insira um email válido.");
-        return;
-    }
-     if (newSenha && newSenha.length < 6) {
-        alert("A nova senha deve ter pelo menos 6 caracteres.");
-        return;
-    }
 
     const payload: any = {
-      nome: adminData.nome, 
-      email: newEmail,
-      telefone: newTelefone.trim() || null, 
-      tipoDeUsuario: adminData.tipoDeUsuario,
+        nome: adminData.nome, 
+        email: newEmail,
+        telefone: newTelefone.trim() || null, 
+        tipoDeUsuario: adminData.tipoDeUsuario,
     };
     if (newSenha.trim() !== "") {
-      payload.senha = newSenha;
+        payload.senha = newSenha;
     }
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/usuarios/editar/${adminData.id}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+        const response = await fetch(
+            `${API_BASE_URL}/usuarios/editar/${adminData.id}`,
+            {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            }
+        );
+
+        if (response.ok) {
+            const successMessage = await response.text(); 
+            console.log("Mensagem de sucesso do servidor:", successMessage);
+            alert("Perfil atualizado com sucesso!");
+            const processField = (value: any): string => {
+                if (value && typeof value === 'string' && value.trim() !== "") return value.trim();
+                if (typeof value === 'number') return String(value);
+                if (value === null || value === undefined || String(value).trim() === "") return "Não informado"; 
+                return String(value);
+            };
+            
+            const updatedAdminDataForState = {
+                ...adminData, 
+                id: adminData.id, 
+                email: newEmail,
+                telefone: processField(newTelefone),
+            };
+            setAdminData(updatedAdminDataForState);
+
+            const userFromStorage = JSON.parse(localStorage.getItem("user") || "{}");
+            userFromStorage.id = adminData.id; 
+            userFromStorage.email = newEmail; 
+            userFromStorage.nome = adminData.nome; 
+            userFromStorage.telefone = processField(newTelefone); 
+            userFromStorage.cpf = adminData.cpf;
+            userFromStorage.tipoDeUsuario = adminData.tipoDeUsuario;
+            localStorage.setItem("user", JSON.stringify(userFromStorage));
+
+            setNewTelefone(processField(newTelefone) === "Não informado" ? "" : processField(newTelefone));
+            setNewSenha("");
+            setEditingProfile(false); 
+
+        } else {
+            const errorMessage = await response.text(); 
+            alert(`Erro ao atualizar perfil: ${errorMessage || `Erro ${response.status}`}`);
         }
-      );
-
-      if (response.ok) {
-          const updatedApiResponse = await response.json(); 
-          alert("Perfil atualizado com sucesso!");
-
-          const processField = (value: any): string => {
-              if (value && typeof value === 'string' && value.trim() !== "") return value.trim();
-              if (typeof value === 'number') return String(value);
-              return "Não informado";
-          };
-
-          const updatedAdminDataState = {
-              ...adminData,
-              email: updatedApiResponse.email || newEmail,
-              telefone: processField(updatedApiResponse.telefone),
-          };
-          setAdminData(updatedAdminDataState);
-
-          const userFromStorage = JSON.parse(localStorage.getItem("user") || "{}");
-          userFromStorage.email = updatedAdminDataState.email;
-          userFromStorage.nome = updatedAdminDataState.nome; 
-          userFromStorage.telefone = updatedAdminDataState.telefone;
-          localStorage.setItem("user", JSON.stringify(userFromStorage));
-
-          setNewEmail(updatedAdminDataState.email);
-          setNewTelefone(updatedAdminDataState.telefone === "Não informado" ? "" : updatedAdminDataState.telefone);
-          setNewSenha("");
-          setEditingProfile(false); 
-
-      } else {
-          const errorMessage = await response.text(); 
-          alert(`Erro ao atualizar perfil: ${errorMessage || `Erro ${response.status}`}`);
-      }
     } catch (error) {
         console.error("Erro de rede ou ao atualizar perfil:", error);
         alert(`Ocorreu um erro de rede ou inesperado: ${ (error instanceof Error) ? error.message : "Erro desconhecido"}`);
     }
-  };
+};
 
 
   const handleDeleteUser = async (userId: number) => {
@@ -541,31 +537,31 @@ const AdminPage = () => {
            return <div className="text-center text-gray-500 py-10">Carregando dados do perfil...</div>;
         }
         return (
-          <section className="bg-white p-6 sm:p-8 rounded-xl shadow-lg max-w-xl mx-auto">
+          <section className="bg-white p-6 sm:p-8 rounded-xl shadow-lg max-w-xl mx-auto text-black">
             <h2 className="text-2xl sm:text-3xl font-semibold text-gray-700 mb-8 text-center">
               Meu Perfil
             </h2>
             {!editingProfile ? (
               <div className="space-y-5">
                 <div className="pb-3 border-b border-gray-200">
-                  <p className="text-sm font-medium text-gray-500">Nome</p>
-                  <p className="text-lg text-gray-800">{adminData.nome}</p>
+                  <p className="text-sm font-medium text-black">Nome</p>
+                  <p className="text-lg text-black">{adminData.nome}</p>
                 </div>
                 <div className="pb-3 border-b border-gray-200">
-                  <p className="text-sm font-medium text-gray-500">CPF</p>
-                  <p className="text-lg text-gray-800">{adminData.cpf}</p>
+                  <p className="text-sm font-medium text-black">CPF</p>
+                  <p className="text-lg text-black">{adminData.cpf}</p>
                 </div>
                 <div className="pb-3 border-b border-gray-200">
-                  <p className="text-sm font-medium text-gray-500">Email</p>
-                  <p className="text-lg text-gray-800">{adminData.email}</p>
+                  <p className="text-sm font-medium text-black">Email</p>
+                  <p className="text-lg text-black">{adminData.email}</p>
                 </div>
                 <div className="pb-3 border-b border-gray-200">
-                  <p className="text-sm font-medium text-gray-500">Telefone</p>
-                  <p className="text-lg text-gray-800">{adminData.telefone}</p>
+                  <p className="text-sm font-medium text-black">Telefone</p>
+                  <p className="text-lg text-black">{adminData.telefone}</p>
                 </div>
                 <div className="pb-3">
-                  <p className="text-sm font-medium text-gray-500">Senha</p>
-                  <p className="text-lg text-gray-800">••••••••</p>
+                  <p className="text-sm font-medium text-black">Senha</p>
+                  <p className="text-lg text-black">••••••••</p>
                 </div>
                 <button
                   type="button"
@@ -583,14 +579,14 @@ const AdminPage = () => {
                 </button>
               </div>
             ) : (
-              <form onSubmit={handleUpdateProfile} className="space-y-6">
+              <form onSubmit={handleUpdateProfile} className="space-y-6 text-black">
                  <div>
                   <label htmlFor="profileNome" className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
-                  <p id="profileNome" className="text-lg p-3 bg-gray-100 rounded-md text-gray-500">{adminData.nome} (Não editável)</p>
+                  <p id="profileNome" className="text-sm p-3 bg-gray-100 rounded-md text-gray-500">{adminData.nome} (Não editável)</p>
                 </div>
                  <div>
                   <label htmlFor="profileCPF" className="block text-sm font-medium text-gray-700 mb-1">CPF</label>
-                  <p id="profileCPF" className="text-lg p-3 bg-gray-100 rounded-md text-gray-500">{adminData.cpf} (Não editável)</p>
+                  <p id="profileCPF" className="text-sm p-3 bg-gray-100 rounded-md text-gray-500">{adminData.cpf} (Não editável)</p>
                 </div>
                 <div>
                   <label htmlFor="profileEmail" className="block text-sm font-medium text-gray-700 mb-1">Email <span className="text-red-500">*</span></label>
@@ -601,7 +597,7 @@ const AdminPage = () => {
                   <input id="profileTelefone" type="tel" value={newTelefone} onChange={(e) => setNewTelefone(e.target.value)} className="w-full border-gray-300 rounded-lg shadow-sm p-3 focus:ring-indigo-500 focus:border-indigo-500 text-sm" placeholder="(XX) XXXXX-XXXX" />
                 </div>
                 <div>
-                  <label htmlFor="profileSenha" className="block text-sm font-medium text-gray-700 mb-1">Nova Senha (mín. 6 caracteres)</label>
+                  <label htmlFor="profileSenha" className="block text-sm font-medium text-gray-700 mb-1">Nova Senha (mín. 8 caracteres, 1 letra maiuscula, 1 letra minuscula e 1 número)</label>
                   <input id="profileSenha" type="password" value={newSenha} onChange={(e) => setNewSenha(e.target.value)} className="w-full border-gray-300 rounded-lg shadow-sm p-3 focus:ring-indigo-500 focus:border-indigo-500 text-sm" placeholder="Deixe em branco para não alterar" minLength={6} />
                 </div>
                 <div className="flex flex-col sm:flex-row gap-4 pt-2">
@@ -647,7 +643,7 @@ const AdminPage = () => {
                 <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 capitalize">
                     {selectedTab.replace("usuarios", "Gerenciamento de Usuários").replace("servicos", "Gerenciamento de Serviços").replace("perfil", "Configurações de Perfil").replace("recepcao", "Modo Recepção")}
                 </h2>
-                {adminData && <p className="text-gray-600">Logado como: {adminData.email}</p>}
+                {adminData && <p className="text-gray-600">Olá, {adminData.nome}</p>}
             </div>
         </header>
         <main className="flex-grow p-4 sm:p-8 overflow-y-auto bg-slate-50">

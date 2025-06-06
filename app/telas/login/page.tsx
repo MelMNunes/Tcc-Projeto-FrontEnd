@@ -105,6 +105,7 @@ const LoginCadastro = () => {
         localStorage.setItem(
           "user",
           JSON.stringify({
+            id: response.id,
             nome: response.nome,
             email: email,
             tipoDeUsuario: response.tipoDeUsuario,
