@@ -194,7 +194,8 @@ const UserModal = ({ isOpen, onClose, onSave }: UserModalProps) => {
 
           <div>
             <label htmlFor="senha" className="block text-sm font-medium text-gray-700 mb-1">
-              Senha <span className="text-red-500">*</span> (mín. 6 caracteres)
+              Senha <span className="text-red-500">*</span> (mín. 8 caracteres, 1 letra maiuscula, 1 letra
+                    minuscula e 1 número)
             </label>
             <input
               type="password"

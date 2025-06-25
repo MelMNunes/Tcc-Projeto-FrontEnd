@@ -446,7 +446,7 @@ const ClientesPage = () => {
       <nav className="w-64 bg-white p-5 shadow-xl h-screen fixed top-0 left-0 flex flex-col justify-between print:hidden">
         <div>
           <div className="text-center mb-10 pt-2">
-            <h1 className="text-2xl font-bold text-blue-700">Meu Painel</h1>
+            <h1 className="text-2xl font-bold text-blue-700">Painel</h1>
             <p className="text-sm text-gray-500 mt-1">Cliente</p>
           </div>
           <ul className="space-y-3">
@@ -603,7 +603,7 @@ const ClientesPage = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Nome:
                     </label>
-                    <p className="text-lg text-gray-800 p-3 border rounded-md bg-gray-100">
+                    <p className="text-md text-gray-800 p-3 border rounded-md bg-gray-100">
                       {clienteData.nome}
                     </p>
                   </div>
@@ -611,7 +611,7 @@ const ClientesPage = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       CPF:
                     </label>
-                    <p className="text-lg text-gray-800 p-3 border rounded-md bg-gray-100">
+                    <p className="text-md text-gray-800 p-3 border rounded-md bg-gray-100">
                       {clienteData.cpf}
                     </p>
                   </div>
@@ -652,7 +652,7 @@ const ClientesPage = () => {
                       className="block text-sm font-medium text-gray-700 mb-1"
                       htmlFor="senhaCliente"
                     >
-                      Nova Senha (mín. 6 caracteres):
+                      Nova Senha (mín. 8 caracteres, 1 letra maiúscula, 1 letra minuscula e 1 número):
                     </label>
                     <input
                       id="senhaCliente"

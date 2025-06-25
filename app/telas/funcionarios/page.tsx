@@ -908,6 +908,14 @@ const FuncionariosPage: React.FC = () => {
                       {funcionarioData.nome}
                     </p>
                   </div>
+                                    <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      CPF:
+                    </label>
+                    <p className="text-md text-gray-800 p-3 border rounded-md bg-gray-100">
+                      {funcionarioData.cpf}
+                    </p>
+                  </div>
                   <div>
                     <label
                       className="block text-sm font-medium text-gray-700 mb-1"
@@ -944,7 +952,7 @@ const FuncionariosPage: React.FC = () => {
                       className="block text-sm font-medium text-gray-700 mb-1"
                       htmlFor="senhaFunc"
                     >
-                      Nova Senha (mín. 6 caracteres):
+                      Nova Senha (mín. 8 caracteres, 1 letra maiúscula, 1 letra minuscula e 1 número):
                     </label>
                     <input
                       id="senhaFunc"
